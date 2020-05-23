@@ -1,5 +1,11 @@
-7 4
-BBBBB  
-   B   
-  B    
-BBBBBBB
+10 10
+          
+     B    
+          
+  B       
+    B     
+      B   
+          
+  B   B   
+          
+          
