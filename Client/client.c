@@ -1,11 +1,5 @@
 #include "client.h"
 
-void * clientThread(void *arg){
-	
-
-	return (NULL);
-}
-
 int main(int argc, char* argv[]){
 
 	SDL_Event event;
@@ -48,20 +42,17 @@ int main(int argc, char* argv[]){
 		perror("bind: ");
 		exit(EXIT_FAILURE);
 	}
-
-	int err_rcv;
-	exe4_message msg;
-	
 	printf("just connected to the server \n");
+	
+	//receive and send thread id
+	pthread_t receive_id;
+	pthread_t send_id;
 
-	while((err_rcv = recv(sock_fd, &msg , sizeof(msg), 0)) >0 ){
-    	printf("received %d byte %d %d %d\n", err_rcv, msg.character, msg.x, msg.y);
-	}
-
-	pthread_t *thread_id;
-
-	pthread_create(thread_id, NULL, clientThread, NULL);
-
+	//receives messages from server
+	pthread_create(&receive_id, NULL, threadReceive, (void *)&sock_fd);
+	//send messages to server
+	pthread_create(&send_id, NULL, threadSend, (void *)&sock_fd);
+	
 	//creates a windows and a board with 50x20 cases
 	create_board_window(50, 20);
 
@@ -97,5 +88,25 @@ int main(int argc, char* argv[]){
 	}
 	
 	printf("fim\n");
+	close(sock_fd);
 	close_board_windows();
+}
+
+void * threadReceive(void *arg){
+	int err_rcv;
+	exe4_message msg;
+	int *sock_fd = (int*) arg;
+
+	printf("%d\n", *sock_fd);
+
+	while((err_rcv = recv(*sock_fd, &msg , sizeof(msg), 0)) > 0 ){
+    	printf("received %d byte %d %d %d\n", err_rcv, msg.character, msg.x, msg.y);
+	}
+
+	return (NULL);
+}
+
+void * threadSend(void *arg){
+
+	return (NULL);
 }

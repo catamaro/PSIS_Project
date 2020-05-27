@@ -1,11 +1,13 @@
 #include "structs.h"
 #include "server.h"
+#include "list_handler.h"
 
-int sock_fd; 
+int server_fd; 
 int board_x;
 int board_y;
 
 #define MAX_PLAYERS_WAITING 5
+#define MAX_PLAYERS board_x*board_y/2 //provisório
 
 int main(int argc, char* argv[]){
 	
@@ -21,33 +23,33 @@ int main(int argc, char* argv[]){
 
 	int **board = loadBoard(argv[1]);
 
-	sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sock_fd == -1){
+	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(server_fd == -1){
 		perror("socket: ");
 		exit(EXIT_FAILURE);
 	}
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58000);
-	int err = bind(sock_fd, (struct sockaddr *)&local_addr, 
+	local_addr.sin_port = htons(58002);
+	int err = bind(server_fd, (struct sockaddr *)&local_addr, 
 						sizeof(local_addr));
 	if(err == -1){
 		perror("bind: ");
 		exit(EXIT_FAILURE);
 	}
 
-	printf(" socket created and binded \n");
-	if(listen(sock_fd, MAX_PLAYERS_WAITING) == -1){
+	printf("Socket created and binded \n");
+	if(listen(server_fd, MAX_PLAYERS_WAITING) == -1){
 		perror("listen: ");
 		exit(EXIT_FAILURE);
 	}
 
 	//accept thread id
-	pthread_t *thread_id;
+	pthread_t thread_id;
 
 	//accepts new player connections
-	pthread_create(thread_id, NULL, threadAccept, NULL);
+	pthread_create(&thread_id, NULL, threadAccept, NULL);
 
 	//monster and packman position
 	int x = 0;
@@ -81,9 +83,11 @@ int main(int argc, char* argv[]){
 
 	free(board[0]);
     free(board);
+	freeList();
 
 	printf("fim\n");
 	close_board_windows();
+	close(server_fd);
 
 	exit(EXIT_SUCCESS);
 }
@@ -92,22 +96,39 @@ int main(int argc, char* argv[]){
 void * threadAccept(void *arg){
 	struct sockaddr_in client_addr;
 	socklen_t size_addr = sizeof(client_addr);
-	player *new_player = (player*) malloc(sizeof(player));
-	int num_players = 0;
+
+	struct position *pos1 = malloc(sizeof(position));
+	struct position *pos2 = malloc(sizeof(position));
+	int num_players = 0, new_fd;
+	player *new_player;
+
 
 	while(1){
 		printf("waiting for players\n");
-		sock_fd = accept(sock_fd,
+		new_fd = accept(server_fd,
 							(struct sockaddr *) & client_addr, &size_addr);
-		if(sock_fd == -1) {
+		if(new_fd == -1) {
 			perror("accept ");
 			exit(EXIT_FAILURE);
 		}
 
-		new_player->id = num_players;
-		new_player->x = random()%board_x;
-		new_player->x = random()%board_y;
-		num_players ++;
+		pos1->x = random()%board_x;
+		pos1->y = random()%board_y;
+		pos2->x = random()%board_x;
+		pos2->y = random()%board_y;
+
+		if(num_players < MAX_PLAYERS){
+			new_player = insertPlayer(pos1, pos2, num_players, new_fd);
+
+			pthread_create(&(new_player->thread_id), NULL, threadClient, NULL);
+
+			printf("Player %d entered the game\n", num_players);
+
+			num_players ++;
+		} 
+		else{
+			printf("Maximum number of players achived\n");
+		}
 	}
 
 	return (NULL);

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h> 
+#include <unistd.h>
 
 void * threadAccept(void *arg);
 void * threadClient(void *arg);

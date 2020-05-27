@@ -1,28 +1,36 @@
 #include "structs.h"
 #include "server.h"
 
-struct node *head = NULL;
+struct player *head = NULL;
+
+player *getList()
+{
+   return head;
+}
 
 //display the list
-void printList() {
-   struct node *ptr = head;
+void printList()
+{
+   struct player *ptr = head;
    printf("\n[ ");
 
    //start from the beginning
-   while(ptr != NULL) {
-      printf("(%d,%d,%d,%d) ",ptr->x,ptr->y,ptr->player,ptr->character);
+   while (ptr != NULL)
+   {
+      printf("(%d,%d,%d,%d,%d) ", ptr->id, ptr->monster->x, ptr->monster->y,
+             ptr->pacman->x, ptr->pacman->y);
       ptr = ptr->next;
    }
 
    printf(" ]");
 }
 
-
 //delete first item
-struct node* deleteFirst() {
+struct player *deleteFirst()
+{
 
    //save reference to first link
-   struct node *tempLink = head;
+   struct player *tempLink = head;
 
    //mark next to first link as first
    head = head->next;
@@ -33,15 +41,18 @@ struct node* deleteFirst() {
 }
 
 //is list empty
-bool isEmpty() {
+bool isEmpty()
+{
    return head == NULL;
 }
 
-int length() {
+int length()
+{
    int length = 0;
-   struct node *current;
+   struct player *current;
 
-   for(current = head; current != NULL; current = current->next) {
+   for (current = head; current != NULL; current = current->next)
+   {
       length++;
    }
 
@@ -49,23 +60,29 @@ int length() {
 }
 
 //find a link with given player
-struct node* find(int player) {
+struct player *findPlayer(int player)
+{
 
    //start from the first link
-   struct node* current = head;
+   struct player *current = head;
 
    //if list is empty
-   if(head == NULL) {
+   if (head == NULL)
+   {
       return NULL;
    }
 
    //navigate through list
-   while(current->player != player) {
+   while (current->id != player)
+   {
 
-      //if it is last node
-      if(current->next == NULL) {
+      //if it is last player
+      if (current->next == NULL)
+      {
          return NULL;
-      } else {
+      }
+      else
+      {
          //go to next link
          current = current->next;
       }
@@ -76,25 +93,30 @@ struct node* find(int player) {
 }
 
 //delete a link with given player
-void delete(int player) {
+void deletePlayer(int player_id)
+{
 
    //start from the first link
-   struct node* current = head;
-   struct node* previous = NULL;
-   struct node* temp = NULL;
+   struct player *current = head;
+   struct player *previous = NULL;
 
    //if list is empty
-   if(head == NULL) {
+   if (head == NULL)
+   {
       return;
    }
 
    //navigate through list
-   while(current->player != player) {
+   while (current->id != player_id)
+   {
 
-      //if it is last node
-      if(current->next == NULL) {
+      //if it is last player
+      if (current->next == NULL)
+      {
          return;
-      } else {
+      }
+      else
+      {
          //store reference to current link
          previous = current;
          //move to next link
@@ -103,145 +125,106 @@ void delete(int player) {
    }
 
    //found a match, update the link
-   if(current == head) {
+   if (current == head)
+   {
       free(current);
       //change first to point to next link
       head = head->next;
-   } else {
+   }
+   else
+   {
       //bypass the current link
       previous->next = current->next;
       free(current);
    }
 }
 
-// function to insert a Node at required position
-void insertPos(int x, int y, int player, int character)
+// function to insert a player at required position
+player * insertPlayer(struct position *pos1, struct position *pos2, int player_id, int fd)
 {
-    if(head == NULL)
-    {
-      struct node *link = (struct node*) malloc(sizeof(struct node));
+   if (head == NULL)
+   {
+      struct player *link = (struct player *)malloc(sizeof(struct player));
+      link->pacman = (struct position *)malloc(sizeof(struct position));
+      link->monster = (struct position *)malloc(sizeof(struct position));
 
-      link->x = x;
-      link->y = y;
-      link->player = player;
-      link->character = character;
+      link->pacman->x = pos1->x;
+      link->pacman->y = pos1->y;
+      link->monster->x = pos2->x;
+      link->monster->y = pos2->y;
+      link->id = player_id;
+      link->sock_fd = fd;
 
-      //point it to old first node
+      //point it to old first player
       link->next = head;
 
-      //point first to new first node
+      //point first to new first player
       head = link;
-      return;
-    }
-    //start from the first node
-    struct node* current = head;
+      return link;
+   }
+   //start from the first player
+   struct player *current = head;
 
-    //navigate through list
-    while(current->player != (player-1)) {
-       //if it is last node
-       if(current->next == NULL) {
+   //navigate through list
+   while (current->id != (player_id - 1))
+   {
+      //if it is last player
+      if (current->next == NULL)
+      {
          //create a link
-         struct node *link = (struct node*) malloc(sizeof(struct node));
-         link->x = x;
-         link->y = y;
-         link->player = player;
-         link->character = character;
-         current->next = link;
+         struct player *link = (struct player *)malloc(sizeof(struct player));
+         link->pacman = (struct position *)malloc(sizeof(struct position));
+         link->monster = (struct position *)malloc(sizeof(struct position));
+         link->pacman->x = pos1->x;
+         link->pacman->y = pos1->y;
+         link->monster->x = pos2->x;
+         link->monster->y = pos2->y;
+         link->id = player_id;
+         link->sock_fd = fd;
          link->next = NULL;
-         return;
-       } else {
-          //move to next link
-          current = current->next;
-       }
-    }
-    struct node *link = (struct node*) malloc(sizeof(struct node));
-    link->x = x;
-    link->y = y;
-    link->player = player;
-    link->character = character;
-    if(current->next == NULL)
-    {
+
+         return link;
+      }
+      else
+      {
+         //move to next link
+         current = current->next;
+      }
+   }
+   struct player *link = (struct player *)malloc(sizeof(struct player));
+   link->pacman = (struct position *)malloc(sizeof(struct position));
+   link->monster = (struct position *)malloc(sizeof(struct position));
+   link->pacman->x = pos1->x;
+   link->pacman->y = pos1->y;
+   link->monster->x = pos2->x;
+   link->monster->y = pos2->y;
+   link->id = player_id;
+   link->sock_fd = fd;
+
+   if (current->next == NULL)
+   {
       current->next = link;
       link->next = NULL;
-    }
-    else
-    {
+   }
+   else
+   {
       link->next = current->next;
       current->next = link;
-    }
-
+   }
+   return link;
 }
 
 void freeList()
 {
-   struct node* tmp;
+   struct player *tmp;
 
    while (head != NULL)
-    {
-       tmp = head;
-       head = head->next;
-       free(tmp);
-    }
-
-}
-
-void main() {
-   insertPos(1,10,1,0);
-   insertPos(4,1,4,0);
-   insertPos(2,20,2,1);
-   insertPos(6,56,6,1);
-   insertPos(5,40,5,0);
-   insertPos(3,30,3,1);
-
-
-   printf("Original List: ");
-
-   //print list
-   printList();
-
-   while(!isEmpty()) {
-      deleteFirst();
+   {
+      tmp = head;
+      head = head->next;
+      close(tmp->sock_fd);
+      free(tmp->pacman);
+      free(tmp->monster);
+      free(tmp);
    }
-
-   printf("\nList after deleting all items: ");
-   printList();
-   insertPos(1,10,1,0);
-   insertPos(2,20,2,1);
-   insertPos(3,30,3,1);
-   insertPos(4,1,4,0);
-   insertPos(5,40,5,0);
-   insertPos(6,56,6,1);
-
-   printf("\nRestored List: ");
-   printList();
-   printf("\n");
-
-   struct node *foundLink = find(4);
-
-   if(foundLink != NULL) {
-      printf("Element found: ");
-      printf("(%d,%d,%d,%d) ",foundLink->x,foundLink->y,
-                        foundLink->player, foundLink->character);
-      printf("\n");
-   } else {
-      printf("Element not found.");
-   }
-
-   delete(4);
-   printf("List after deleting an item: ");
-   printList();
-   printf("\n");
-   foundLink = find(4);
-
-   if(foundLink != NULL) {
-      printf("Element found: ");
-      printf("(%d,%d,%d,%d) ",foundLink->x,foundLink->y,
-                        foundLink->player, foundLink->character);
-      printf("\n");
-   } else {
-      printf("Element not found.");
-   }
-
-   printf("\n");
-   freeList();
 }
