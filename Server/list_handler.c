@@ -1,4 +1,5 @@
 #include "structs.h"
+#include "server.h"
 
 struct node *head = NULL;
 

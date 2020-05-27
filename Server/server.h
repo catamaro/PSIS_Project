@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h> 
 
 void * threadAccept(void *arg);
 void * threadClient(void *arg);

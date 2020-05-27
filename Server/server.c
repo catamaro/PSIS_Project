@@ -44,10 +44,10 @@ int main(int argc, char* argv[]){
 	}
 
 	//accept thread id
-	pthread_t thread_id;
+	pthread_t *thread_id;
 
 	//accepts new player connections
-	pthread_create(&thread_id, NULL, threadAccept, NULL);
+	pthread_create(thread_id, NULL, threadAccept, NULL);
 
 	//monster and packman position
 	int x = 0;
