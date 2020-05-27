@@ -1,16 +1,17 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "UI_library/UI_library.h"
+#include "UI_library.h"
 #include <pthread.h>
-#include <sys/types.h>          
-#include <sys/socket.h>
+#include <sys/socket.h> 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-typedef struct exe4_message{
-  int character; // 2 pacman 3 monster
-  int x;
-  int y;
-} exe4_message;
-
+void * threadAccept(void *arg);
+void * threadClient(void *arg);
+int ** loadBoard(char* arg);
 
 #endif

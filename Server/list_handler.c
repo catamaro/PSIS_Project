@@ -1,15 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-struct node {
-   int x;
-   int y;
-   int player;
-   int character;
-   struct node *next;
-};
+#include "structs.h"
 
 struct node *head = NULL;
 

@@ -1,7 +1,9 @@
 #include "client.h"
 
 void * clientThread(void *arg){
-	return 0;
+	
+
+	return (NULL);
 }
 
 int main(int argc, char* argv[]){
@@ -9,18 +11,56 @@ int main(int argc, char* argv[]){
 	SDL_Event event;
 	int done = 0;
 	char *IP;
-	char *port;
+	int port;
+	struct sockaddr_in server_addr;
+
 
 	if(argc != 3){
-		printf("error ");
-		exit(1);
+		printf("error");
+		exit(EXIT_FAILURE);
 	}
 	else{
-		IP = (char*) malloc(sizeof(argv[1]));
-		port = (char*) malloc(sizeof(argv[2]));
+		IP = (char*) malloc(strlen(argv[1]));
 		strcpy(IP, argv[1]);
-		strcpy(port, argv[2]);
+		if(sscanf(argv[2], "%d", &port) != 1){
+			printf("error: argv[2] is not a number\n");
+			exit(EXIT_FAILURE);
+		}
 	}
+	
+	int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sock_fd == -1){
+		perror("socket: ");
+		exit(EXIT_FAILURE);
+	}
+
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(port);
+	int err = inet_aton(IP, &server_addr.sin_addr);
+	if(err == 0){
+		perror("aton: ");
+		exit(EXIT_FAILURE);
+	}
+
+	err = connect(sock_fd, (const struct sockaddr *)&server_addr,
+						sizeof(server_addr));
+	if(err == -1){
+		perror("bind: ");
+		exit(EXIT_FAILURE);
+	}
+
+	int err_rcv;
+	exe4_message msg;
+	
+	printf("just connected to the server \n");
+
+	while((err_rcv = recv(sock_fd, &msg , sizeof(msg), 0)) >0 ){
+    	printf("received %d byte %d %d %d\n", err_rcv, msg.character, msg.x, msg.y);
+	}
+
+	pthread_t *thread_id;
+
+	pthread_create(thread_id, NULL, clientThread, NULL);
 
 	//creates a windows and a board with 50x20 cases
 	create_board_window(50, 20);
@@ -28,10 +68,6 @@ int main(int argc, char* argv[]){
 	//monster and packman position
 	int x = 0;
 	int y = 0;
-
-	pthread_t *thread_id;
-
-	pthread_create(thread_id, NULL, clientThread, NULL);
 
 	while (!done){
 		while (SDL_PollEvent(&event)) {

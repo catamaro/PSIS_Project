@@ -57,9 +57,9 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 //load monster
- 	SDL_Surface* loadedSurface = IMG_Load("./monster.png");
+ 	SDL_Surface* loadedSurface = IMG_Load("./UI_library/monster.png");
    if( loadedSurface == NULL ){
-       printf( "Unable to load image %s! SDL_image Error: %s\n", "./monster.png", IMG_GetError() );
+       printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/monster.png", IMG_GetError() );
  			exit(-1);
    } else {
 			 monster = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -67,9 +67,9 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 	 //load pacman
-	 loadedSurface = IMG_Load("./pacman.png");
+	 loadedSurface = IMG_Load("./UI_library/pacman.png");
  	if( loadedSurface == NULL ){
- 			printf( "Unable to load image %s! SDL_image Error: %s\n", "./pacman.png", IMG_GetError() );
+ 			printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/pacman.png", IMG_GetError() );
  		 exit(-1);
  	} else {
  			pacman = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -77,9 +77,9 @@ int create_board_window(int dim_x, int dim_y){
  	}
 
 	//load lemon
-	loadedSurface = IMG_Load("./lemon.png");
+	loadedSurface = IMG_Load("./UI_library/lemon.png");
  if( loadedSurface == NULL ){
-		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./lemon.png", IMG_GetError() );
+		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/lemon.png", IMG_GetError() );
 		exit(-1);
  } else {
 		 lemon = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -87,9 +87,9 @@ int create_board_window(int dim_x, int dim_y){
  }
 
  //load brick
- loadedSurface = IMG_Load("./brick.png");
+ loadedSurface = IMG_Load("./UI_library/brick.png");
 if( loadedSurface == NULL ){
-		printf( "Unable to load image %s! SDL_image Error: %s\n", "./brick.png", IMG_GetError() );
+		printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/brick.png", IMG_GetError() );
 	 exit(-1);
 } else {
 		brick = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -97,9 +97,9 @@ if( loadedSurface == NULL ){
 }
 
 //load brick
-loadedSurface = IMG_Load("./cherry.png");
+loadedSurface = IMG_Load("./UI_library/cherry.png");
 if( loadedSurface == NULL ){
-	 printf( "Unable to load image %s! SDL_image Error: %s\n", "./cherry.png", IMG_GetError() );
+	 printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/cherry.png", IMG_GetError() );
 	exit(-1);
 } else {
 	 cherry = SDL_CreateTextureFromSurface(renderer, loadedSurface);
