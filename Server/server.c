@@ -1,6 +1,8 @@
 #include "structs.h"
 #include "server.h"
 #include "list_handler.h"
+#include "comm.h"
+
 
 int server_fd; 
 int board_x;
@@ -18,7 +20,7 @@ int main(int argc, char* argv[]){
 
 	if(argc != 2){
 		printf("error: wrong arguments\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	int **board = loadBoard(argv[1]);
@@ -31,7 +33,7 @@ int main(int argc, char* argv[]){
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58002);
+	local_addr.sin_port = htons(58008);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr, 
 						sizeof(local_addr));
 	if(err == -1){
@@ -51,33 +53,12 @@ int main(int argc, char* argv[]){
 	//accepts new player connections
 	pthread_create(&thread_id, NULL, threadAccept, NULL);
 
-	//monster and packman position
-	int x = 0;
-	int y = 0;
-
 	while (!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
 				done = SDL_TRUE;
 			}
-			//when the mouse mooves the monster also moves
-			if(event.type == SDL_MOUSEMOTION){
-				int x_new, y_new;
-
-				//this fucntion return the place cwher the mouse cursor is
-				get_board_place(event.motion .x, event.motion .y,
-												&x_new, &y_new);
-				//if the mluse moved toi anothe place
-				if((x_new != x) || (y_new != y)){
-					//the old place is cleared
-					clear_place(x, y);
-					x = x_new;
-					y = y_new;
-
-					paint_pacman(x, y , 200, 100, 7);					
-					printf("move x-%d y-%d\n", x,y);
-				}
-			}
+			
 		}
 	}
 
@@ -100,7 +81,8 @@ void * threadAccept(void *arg){
 	struct position *pos1 = malloc(sizeof(position));
 	struct position *pos2 = malloc(sizeof(position));
 	int num_players = 0, new_fd;
-	player *new_player;
+	struct player *new_player;
+	size_t err;
 
 
 	while(1){
@@ -111,30 +93,43 @@ void * threadAccept(void *arg){
 			perror("accept ");
 			exit(EXIT_FAILURE);
 		}
+		if(num_players > MAX_PLAYERS){
+			printf("Maximum number of players achived\n");
+			continue;
+		}
 
+		err = rcv_color(new_fd);
+		if(err == -1){
+			printf("error: color already in use\n");
+			continue;
+		}
+		
+		// provisório
 		pos1->x = random()%board_x;
 		pos1->y = random()%board_y;
 		pos2->x = random()%board_x;
 		pos2->y = random()%board_y;
 
-		if(num_players < MAX_PLAYERS){
-			new_player = insertPlayer(pos1, pos2, num_players, new_fd);
+		new_player = insertPlayer(pos1, pos2, num_players, new_fd);
 
-			pthread_create(&(new_player->thread_id), NULL, threadClient, NULL);
+		pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player);
 
-			printf("Player %d entered the game\n", num_players);
+		printf("Player %d entered the game\n", num_players);
 
-			num_players ++;
-		} 
-		else{
-			printf("Maximum number of players achived\n");
-		}
+		err = send_board(board_x, board_y, new_player);
+		if(err == -1) exit(EXIT_FAILURE);
+
+		num_players ++;
 	}
 
 	return (NULL);
 }
 
 void * threadClient(void *arg){
+	struct player *new_player = (struct player *) arg;
+	int err;
+
+	/* code to receive msg of position*/
 
 	return (NULL);
 }
@@ -174,8 +169,6 @@ int ** loadBoard(char* arg){
     // Read file line by line and store location of brick in board[][]
     i = 0;
     while ((read = getline(&line, &len, fp)) != -1) {
-        printf("Retrieved line of length %zu:\n", read);
-        printf("%s", line);
         // If line doesn't have board_y columns
         if(read!=(board_y+1))
         {

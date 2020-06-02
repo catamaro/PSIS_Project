@@ -3,11 +3,11 @@
 
 #include <pthread.h>
 
-typedef struct exe4_message{
+typedef struct pos_update{
   int character; // 2 pacman 3 monster
   int x;
   int y;
-} exe4_message;
+} pos_update;
 
 typedef struct color{
   int r; 
@@ -23,14 +23,10 @@ struct position {
 typedef struct player{
   int id;
   int sock_fd;
-  pthread_t thread_id;
   struct color *p_color;
-
 
   struct position * pacman;
   struct position * monster;
-
-  struct player * next;
 }player;
 
 
