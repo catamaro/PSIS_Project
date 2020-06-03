@@ -15,5 +15,6 @@
 #include <unistd.h>
 
 int send_board(int x, int y, player *new_player);
+int rcv_color(int sock_fd);
 
 #endif

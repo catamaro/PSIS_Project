@@ -24,7 +24,7 @@ list_handler.o: Server/list_handler.c Server/list_handler.h
 comm_client.o: Client/comm_client.c Client/comm.h Client/structs.h  Client/client.h
 	gcc -c Client/comm_client.c $(LFLAGS) $(LDLIBS)
 
-comm_server.o: Server/comm_server.c Server/comm.h Server/structs.h  Server/server.h
+comm_server.o: Server/comm_server.c Server/comm.h Server/structs.h  Server/server.h Server/list_handler.h
 	gcc -c Server/comm_server.c $(LFLAGS) $(LDLIBS)
 
 UI_library.o: UI_library/UI_library.c UI_library/UI_library.h

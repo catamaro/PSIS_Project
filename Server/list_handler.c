@@ -1,13 +1,11 @@
 #include "structs.h"
 #include "server.h"
 
-struct player *head = NULL;
+struct player *playerHead = NULL;
 
-player *getList()
-{
-   return head;
+player *getPlayerHead(){
+   return playerHead;
 }
-
 //display the list
 void printList()
 {
@@ -140,20 +138,18 @@ void deletePlayer(int player_id)
 }
 
 // function to insert a player at required position
-player * insertPlayer(struct position *pos1, struct position *pos2, int player_id, int fd)
+player * insertPlayer(struct position *pos1, struct position *pos2, struct color *p_color, int player_id, int fd)
 {
    if (head == NULL)
    {
       struct player *link = (struct player *)malloc(sizeof(struct player));
-      link->pacman = (struct position *)malloc(sizeof(struct position));
-      link->monster = (struct position *)malloc(sizeof(struct position));
 
-      link->pacman->x = pos1->x;
-      link->pacman->y = pos1->y;
-      link->monster->x = pos2->x;
-      link->monster->y = pos2->y;
+      link->pacman = pos1;
+      link->monster = pos2;
+      link->p_color = p_color;
       link->id = player_id;
       link->sock_fd = fd;
+      link->next = NULL;
 
       //point it to old first player
       link->next = head;
@@ -173,12 +169,10 @@ player * insertPlayer(struct position *pos1, struct position *pos2, int player_i
       {
          //create a link
          struct player *link = (struct player *)malloc(sizeof(struct player));
-         link->pacman = (struct position *)malloc(sizeof(struct position));
-         link->monster = (struct position *)malloc(sizeof(struct position));
-         link->pacman->x = pos1->x;
-         link->pacman->y = pos1->y;
-         link->monster->x = pos2->x;
-         link->monster->y = pos2->y;
+
+         link->pacman = pos1;
+         link->monster = pos2;
+         link->p_color = p_color;
          link->id = player_id;
          link->sock_fd = fd;
          link->next = NULL;
@@ -192,12 +186,10 @@ player * insertPlayer(struct position *pos1, struct position *pos2, int player_i
       }
    }
    struct player *link = (struct player *)malloc(sizeof(struct player));
-   link->pacman = (struct position *)malloc(sizeof(struct position));
-   link->monster = (struct position *)malloc(sizeof(struct position));
-   link->pacman->x = pos1->x;
-   link->pacman->y = pos1->y;
-   link->monster->x = pos2->x;
-   link->monster->y = pos2->y;
+
+   link->pacman = pos1;
+   link->monster = pos2;
+   link->p_color = p_color;
    link->id = player_id;
    link->sock_fd = fd;
 
@@ -225,6 +217,7 @@ void freeList()
       close(tmp->sock_fd);
       free(tmp->pacman);
       free(tmp->monster);
+      free(tmp->p_color);
       free(tmp);
    }
 }

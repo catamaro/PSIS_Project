@@ -1,4 +1,5 @@
-#include "UI_library.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 int screen_width;
 int screen_height;
@@ -12,6 +13,7 @@ SDL_Texture *display;
 SDL_Surface *screen;
 SDL_Texture* monster;
 SDL_Texture* pacman;
+SDL_Texture* powerpacman;
 SDL_Texture* lemon;
 SDL_Texture* brick;
 SDL_Texture* cherry;
@@ -26,7 +28,7 @@ int create_board_window(int dim_x, int dim_y){
 	screen_height = dim_y *row_height+1;
 
 
-	int i;
+	int i, x, y;
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
 		exit(-1);
@@ -57,9 +59,9 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 //load monster
- 	SDL_Surface* loadedSurface = IMG_Load("./UI_library/monster.png");
+ 	SDL_Surface* loadedSurface = IMG_Load("./monster.png");
    if( loadedSurface == NULL ){
-       printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/monster.png", IMG_GetError() );
+       printf( "Unable to load image %s! SDL_image Error: %s\n", "./monster.png", IMG_GetError() );
  			exit(-1);
    } else {
 			 monster = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -67,19 +69,28 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 	 //load pacman
-	 loadedSurface = IMG_Load("./UI_library/pacman.png");
+	 loadedSurface = IMG_Load("./pacman.png");
  	if( loadedSurface == NULL ){
- 			printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/pacman.png", IMG_GetError() );
+ 			printf( "Unable to load image %s! SDL_image Error: %s\n", "./pacman.png", IMG_GetError() );
  		 exit(-1);
  	} else {
  			pacman = SDL_CreateTextureFromSurface(renderer, loadedSurface);
  			SDL_FreeSurface( loadedSurface );
  	}
+	//load powerpacman
+	loadedSurface = IMG_Load("./powerpacman.png");
+ if( loadedSurface == NULL ){
+		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./powerpacman.png", IMG_GetError() );
+		exit(-1);
+ } else {
+		 powerpacman = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+		 SDL_FreeSurface( loadedSurface );
+ }
 
 	//load lemon
-	loadedSurface = IMG_Load("./UI_library/lemon.png");
+	loadedSurface = IMG_Load("./lemon.png");
  if( loadedSurface == NULL ){
-		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/lemon.png", IMG_GetError() );
+		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./lemon.png", IMG_GetError() );
 		exit(-1);
  } else {
 		 lemon = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -87,9 +98,9 @@ int create_board_window(int dim_x, int dim_y){
  }
 
  //load brick
- loadedSurface = IMG_Load("./UI_library/brick.png");
+ loadedSurface = IMG_Load("./brick.png");
 if( loadedSurface == NULL ){
-		printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/brick.png", IMG_GetError() );
+		printf( "Unable to load image %s! SDL_image Error: %s\n", "./brick.png", IMG_GetError() );
 	 exit(-1);
 } else {
 		brick = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -97,9 +108,9 @@ if( loadedSurface == NULL ){
 }
 
 //load brick
-loadedSurface = IMG_Load("./UI_library/cherry.png");
+loadedSurface = IMG_Load("./cherry.png");
 if( loadedSurface == NULL ){
-	 printf( "Unable to load image %s! SDL_image Error: %s\n", "./UI_library/cherry.png", IMG_GetError() );
+	 printf( "Unable to load image %s! SDL_image Error: %s\n", "./cherry.png", IMG_GetError() );
 	exit(-1);
 } else {
 	 cherry = SDL_CreateTextureFromSurface(renderer, loadedSurface);
@@ -187,20 +198,23 @@ void priv_paint_place(int  board_x, int board_y , int r, int g, int b, SDL_Textu
 void paint_pacman(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , r, g, b, pacman);
 }
+void paint_powerpacman(int  board_x, int board_y , int r, int g, int b){
+	priv_paint_place(board_x, board_y , r, g, b, powerpacman);
+}
 void paint_monster(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , r, g, b, monster);
 }
 void paint_place(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , r, g, b, monster);
 }
-void paint_lemon(int  board_x, int board_y){
+void paint_lemon(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , 255, 255, 255, lemon);
 }
-void paint_cherry(int  board_x, int board_y){
+void paint_cherry(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , 255, 255, 255, cherry);
 }
 
-void paint_brick(int  board_x, int board_y){
+void paint_brick(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , 25, 255, 255, brick);
 }
 void clear_place(int  board_x, int board_y){

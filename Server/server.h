@@ -12,6 +12,11 @@
 #include <stdbool.h> 
 #include <unistd.h>
 
+#define LEFT 0
+#define RIGHT 1
+#define UP 2
+#define DOWN 3
+
 void * threadAccept(void *arg);
 void * threadClient(void *arg);
 int ** loadBoard(char* arg);

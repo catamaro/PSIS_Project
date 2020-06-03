@@ -12,6 +12,10 @@
 #include <stdbool.h> 
 #include <unistd.h>
 
+#define LEFT 0
+#define RIGHT 1
+#define UP 2
+#define DOWN 3
 
 void * threadReceive(void *arg);
 void * threadSend(void *arg);

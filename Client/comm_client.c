@@ -34,3 +34,37 @@ int send_color(int server_fd, struct color *new_color){
 
     return 0;
 }
+
+int send_event(int type, int new_x, int new_y, int direction, struct player *my_player){
+	char message[50];
+	int err;
+
+	if(type == MOUSE){
+		 
+		err = sprintf(message, "%d %d\n", new_x, new_y);
+		if(err == -1){
+			printf("error: cannot create message\n");
+			return -1;
+		}
+		
+		err = write(my_player->sock_fd, message, strlen(message)); 
+		if(err == -1){
+			perror("write: ");
+			return -1;
+		} 
+	}
+	else if(type == KEYBOARD){
+		err = sprintf(message, "%d\n", direction);
+		if(err == -1){
+			printf("error: cannot create message\n");
+			return -1;
+		}
+		
+		err = write(my_player->sock_fd, message, strlen(message)); 
+		if(err == -1){
+			perror("write: ");
+			return -1;
+		} 
+	}
+	return 0;
+}

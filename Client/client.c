@@ -8,9 +8,9 @@ int board_y;
 int main(int argc, char* argv[]){
 
 	SDL_Event event;
-	int done = 0;
 	char *IP;
 	int port;
+	int done = 0, dir;
 	struct sockaddr_in server_addr;
 	struct player *my_player = malloc(sizeof(struct player));
 	my_player->monster = malloc(sizeof(struct position));
@@ -72,13 +72,13 @@ int main(int argc, char* argv[]){
 	//receives messages from server
 	pthread_create(&receive_id, NULL, threadReceive, (void *)&my_player->sock_fd);
 	//send messages to server
-	pthread_create(&send_id, NULL, threadSend, (void *)my_player);
+	//pthread_create(&send_id, NULL, threadSend, (void *)my_player);
 	
-	//monster and packman position
-	int x = 0;
-	int y = 0;
 
-	while (!done){
+	err = send_color(my_player->sock_fd, my_player->p_color);
+	if(err == -1) exit(EXIT_FAILURE);
+
+	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
 				done = SDL_TRUE;
@@ -87,35 +87,27 @@ int main(int argc, char* argv[]){
 			if(event.type == SDL_MOUSEMOTION){
 				int x_new, y_new;
 
-				//this fucntion return the place cwher the mouse cursor is
-				get_board_place(event.motion .x, event.motion .y,
-												&x_new, &y_new);
-				//if the mluse moved toi anothe place
-				if((x_new != x) || (y_new != y)){
-					//the old place is cleared
-					clear_place(x, y);
-					x = x_new;
-					y = y_new;
-	
-					paint_monster(x, y , 200, 100, 7);
-		
-					printf("move x-%d y-%d\n", x,y);
-				}
+				err = send_event(MOUSE,  event.motion.x,  event.motion.y,  -1, my_player);
+				if(err == -1) exit(EXIT_SUCESS);
+				
 			}
 			if(event.type == SDL_KEYDOWN){
-				int x_new, y_new;
 
-				if (event.key.keysym.sym == SDLK_LEFT ){
-					//the olde place is cleared
-					clear_place(x, y);
-
-					//paint the pacman
-					paint_pacman(x, y , 7, 100, 200);
-					printf("move x-%d y-%d\n", x,y);
+				switch (event.key.keysym.sym)
+				{
+					case SDLK_LEFT:  dir = LEFT; break;
+					case SDLK_RIGHT: dir = RIGHT; break;
+					case SDLK_UP:    dir = UP; break;
+					case SDLK_DOWN:  dir = DOWN; break;
 				}
+
+				err = send_event(MOUSE,  -1,  -1, dir, my_player);
+				if(err == -1) exit(EXIT_SUCESS);
 			}
 		}
 	}
+
+	return (NULL);
 	
 	printf("fim\n");
 	close(my_player->sock_fd);
@@ -140,21 +132,86 @@ void * threadReceive(void *arg){
 	create_board_window(board_x, board_y);
 
 	while((err = recv(*sock_fd, &msg , sizeof(msg), 0)) > 0){
-		/* code to update position from other players */ 
-    	printf("received %d byte %d %d %d\n", err, msg.character, msg.x, msg.y);
+
+		clear_place(msg->x, msg->y);
+
+		switch (msg->character)
+		{
+			case MONSTER:  
+				paint_monster(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
+								my_player->p_color->b)); 
+				break;
+			case PACMAN: 
+				paint_pacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
+								my_player->p_color->b)); 
+				break;	
+			case SUPERPACMAN: 
+				paint_powerpacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
+							my_player->p_color->b)); 
+				break;
+			case LEMON:    
+				paint_lemon(msg->new_x, msg->new_y); 
+				break;
+			case CHERRY: 
+				paint_cherry(msg->new_x, msg->new_y); 
+				break;
+		}
+				
+    	printf("received %d byte %d %d %d\n", err, msg.character, msg->new_x, msg->new_y);
+
+		/*switch (event.key.keysym.sym)
+		{
+			case SDLK_LEFT:  x_new--; break;
+			case SDLK_RIGHT: x_new++; break;
+			case SDLK_UP:    y_new--; break;
+			case SDLK_DOWN:  y_new++; break;
+		}*/
 	}
 
 	return (NULL);
 }
 
-void * threadSend(void *arg){
+/*void * threadSend(void *arg){
 	
 	struct player *my_player = (struct player *) arg;
-	int err;
+	int err, dir;
 
 	err = send_color(my_player->sock_fd, my_player->p_color);
 	if(err == -1) exit(EXIT_FAILURE);
 
+	while(!done){
+		while (SDL_PollEvent(&event)) {
+			if(event.type == SDL_QUIT) {
+				done = SDL_TRUE;
+			}
+			//when the mouse mooves the monster also moves
+			if(event.type == SDL_MOUSEMOTION){
+				int x_new, y_new;
+
+				//this fucntion return the place cwher the mouse cursor is
+				get_board_place(event.motion .x, event.motion .y,
+												&x_new, &y_new);
+
+				err = send_event(MOUSE,  x_new,  y_new,  -1, my_player);
+				if(err == -1) exit(EXIT_SUCESS);
+				
+			}
+			if(event.type == SDL_KEYDOWN){
+
+				switch (event.key.keysym.sym)
+				{
+					case SDLK_LEFT:  dir = LEFT; break;
+					case SDLK_RIGHT: dir = RIGHT; break;
+					case SDLK_UP:    dir = UP; break;
+					case SDLK_DOWN:  dir = DOWN; break;
+				}
+
+				err = send_event(MOUSE,  -1,  -1, dir, my_player);
+				if(err == -1) exit(EXIT_SUCESS);
+			}
+		}
+	}
+
 	return (NULL);
-}
+}*/
 

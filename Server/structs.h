@@ -3,11 +3,21 @@
 
 #include <pthread.h>
 
-typedef struct exe4_message{
-  int character; // 2 pacman 3 monster
+#define EMPTY 0
+#define BRICK 1
+#define PACMAN 2
+#define MONSTER 3
+#define LEMON 4
+#define CHERRY 5
+#define SUPERPACMAN 6
+
+typedef struct pos_update{
+  int character; 
   int x;
   int y;
-} exe4_message;
+  int new_x;
+  int new_y;
+} pos_update;
 
 typedef struct color{
   int r; 
@@ -25,7 +35,8 @@ typedef struct player{
   int sock_fd;
   pthread_t thread_id;
   struct color *p_color;
-
+  int superpower;
+  int score;
 
   struct position * pacman;
   struct position * monster;

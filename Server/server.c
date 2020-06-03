@@ -93,14 +93,17 @@ void * threadAccept(void *arg){
 			perror("accept ");
 			exit(EXIT_FAILURE);
 		}
+		
 		if(num_players > MAX_PLAYERS){
 			printf("Maximum number of players achived\n");
+			close(new_fd);
 			continue;
 		}
 
 		err = rcv_color(new_fd);
 		if(err == -1){
 			printf("error: color already in use\n");
+			close(new_fd);
 			continue;
 		}
 		
@@ -112,7 +115,7 @@ void * threadAccept(void *arg){
 
 		new_player = insertPlayer(pos1, pos2, num_players, new_fd);
 
-		pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player);
+		pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player->sock_fd);
 
 		printf("Player %d entered the game\n", num_players);
 
@@ -126,10 +129,14 @@ void * threadAccept(void *arg){
 }
 
 void * threadClient(void *arg){
-	struct player *new_player = (struct player *) arg;
+	int player_fd = (player *) arg;
+	pos_update *new_update = malloc(sizeof(pos_update));
+	SDL_Event event;
 	int err;
 
-	/* code to receive msg of position*/
+	while(err = rcv_event(player_fd, &event) > 0){
+		SDL_PushEvent(event);
+	}
 
 	return (NULL);
 }

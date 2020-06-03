@@ -3,10 +3,20 @@
 
 #include <pthread.h>
 
+#define EMPTY 0
+#define BRICK 1
+#define PACMAN 2
+#define MONSTER 3
+#define LEMON 4
+#define CHERRY 5
+#define SUPERPACMAN 6
+
 typedef struct pos_update{
-  int character; // 2 pacman 3 monster
+  int character; 
   int x;
   int y;
+  int new_x;
+  int new_y;
 } pos_update;
 
 typedef struct color{

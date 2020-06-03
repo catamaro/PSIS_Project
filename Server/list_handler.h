@@ -10,13 +10,12 @@ struct player * findPlayer(int player);
 
 void deletePlayer(int player_id);
 
-player * insertPlayer(struct position *pos1, struct position *pos2, int player_id, int fd);
+player * insertPlayer(struct position *pos1, struct color *p_color, struct position *pos2, int player_id, int fd);
 
 bool isEmpty();
 
 int length();
 
-player * getList();
-
+player *getPlayerHead();
 
 #endif
