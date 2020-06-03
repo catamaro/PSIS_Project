@@ -14,11 +14,9 @@
 #include <stdbool.h> 
 #include <unistd.h>
 
-#define MOUSE = 0;
-#define KEYBOARD = 1;
-
-int rcv_board(char *message, int *board_x, int *board_y);
+int rcv_board(int sock_fd, int *board_x, int *board_y);
 int send_color(int server_fd, struct color *new_color);
 int send_event(int type, int new_x, int new_y, int dir, struct player *my_player);
+int rcv_position(struct player *my_player);
 
 #endif

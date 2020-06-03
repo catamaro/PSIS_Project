@@ -14,7 +14,10 @@
 #include <stdbool.h> 
 #include <unistd.h>
 
-int send_board(int x, int y, player *new_player);
-int rcv_color(int sock_fd);
+int send_board(int x, int y, int sock_fd);
+int rcv_color(int sock_fd, color *new_color);
+int rcv_event(int sock_fd, SDL_Event *new_event, int *type);
+int send_position(struct position * pacman, struct position *monster, int sock_fd);
+
 
 #endif

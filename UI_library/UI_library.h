@@ -1,7 +1,5 @@
 #include <SDL2/SDL.h>
-
-
-
+#include <SDL2/SDL_image.h>
 
 void get_board_place(int mouse_x, int mouse_y, int * board_x, int *board_y);
 int create_board_window(int dim_x, int dim_y);

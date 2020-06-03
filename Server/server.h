@@ -17,8 +17,27 @@
 #define UP 2
 #define DOWN 3
 
+#define EMPTY 0
+#define BRICK 1
+#define PACMAN 2
+#define MONSTER 3
+#define LEMON 4
+#define CHERRY 5
+#define SUPERPACMAN 6
+#define MAX_PLAYERS_WAITING 5
+
 void * threadAccept(void *arg);
 void * threadClient(void *arg);
 int ** loadBoard(char* arg);
+void bounceBounds(int x1, int y1, int* x_new, int* y_new);
+void RandomPositionConnect(int* x1, int* x2, int* y1, int* y2);
+void RandomPositionRules(int* x, int* y);
+void checkRulesMonster(struct player* dealer, struct player* receiver, 
+                        int x_new, int y_new);
+void checkRulesPacman(struct player* dealer, struct player* receiver, 
+                        int x_new, int y_new);
+void checkRulesSuperPacman(struct player* dealer, struct player* receiver, 
+                        int x_new, int y_new);
+void ManageFruits();
 
 #endif

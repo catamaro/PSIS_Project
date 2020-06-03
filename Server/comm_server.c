@@ -3,72 +3,125 @@
 #include "comm.h"
 #include "list_handler.h"
 
-int send_board(int x, int y, player *new_player){
+int send_board(int x, int y, int sock_fd){
     char message[50];
     int err;
 
-    err = sprintf(message, "b %d %d\n", x, y);
+	memset(message, 0, 50*sizeof(char)); 
+
+    err = sprintf(message, "%d %d\n", x, y);
 	if(err == -1){
 		printf("error: cannot create message\n");
 		return -1;
 	}
-	//printf("message: %s\n", message);
 
-   	err = write(new_player->sock_fd, message, strlen(message)); 
+   	err = write(sock_fd, message, strlen(message)); 
 	if(err == -1){
 		perror("write: ");
 		return -1;
 	}
 
+	printf("\nsvr snd board size: %s\n", message);
+
     return 0;
 }
 
-int rcv_color(int sock_fd){
+int send_position(struct position *pacman, struct position *monster, int sock_fd){
+	char message[50];
+    int err;
+
+	memset(message, 0, 50*sizeof(char)); 
+
+    err = sprintf(message, "%d %d %d %d\n", pacman->x, pacman->y, monster->x, monster->y);
+	if(err == -1){
+		printf("error: cannot create message\n");
+		return -1;
+	}
+
+   	err = write(sock_fd, message, strlen(message)); 
+	if(err == -1){
+		perror("write: ");
+		return -1;
+	}
+
+	printf("\nsvr snd initial positions: %s\n", message);
+
+    return 0;
+}
+
+int rcv_color(int sock_fd, color *new_color){
     int err;
 	bool unique_color = true;
 	struct player *player_list;
-	struct color *new_color = malloc(sizeof(struct color));
-
 
 	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
-    err = recv(sock_fd, new_color , sizeof(*new_color), 0);
+	err = recv(sock_fd, new_color , sizeof(*new_color), 0);	
 	if (err == -1){
 		perror("receive: ");
 		exit(EXIT_FAILURE);
 	} 
 
-	player_list = getPlayerHead();
+	printf("\nsvr rcv color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
+
+	player_list = getPlayerList();
 	if (player_list == NULL) return 0; // there are no players
 
 	while(player_list != NULL && unique_color){
-		if(player_list->p_color->r != new_color->r && player_list->p_color->g != new_color->g && 
-			player_list->p_color->b != new_color->b) unique_color = false;
+		if(player_list->p_color->r == new_color->r && player_list->p_color->g == new_color->g && 
+			player_list->p_color->b == new_color->b) unique_color = false;
 		player_list = player_list->next;
 	}
 
 	if(!unique_color) return -1;
+	else return 0;
 
-	printf("r: %d g: %d b: %d\n", new_color->r, new_color->g, new_color->b);
 
-	return 0;
+	/*if(!unique_color){
+		err = sprintf(message, "%d\n", 0);
+		if(err == -1){
+			printf("error: cannot create message\n");
+			return -1;
+		}
+		err = write(sock_fd, message, strlen(message)); 
+		if(err == -1){
+			perror("write: ");
+			exit(EXIT_FAILURE);
+		}
+		//rcv_color(sock_fd, new_color);	
+		return -1;
+	}
+	else{
+		err = sprintf(message, "%d\n", 1);
+		if(err == -1){
+			printf("error: cannot create message\n");
+			return -1;
+		}
+		err = write(sock_fd, message, strlen(message)); 
+		if(err == -1){
+			perror("write: ");
+			exit(EXIT_FAILURE);
+		}
+	} */
 }
 
-int rcv_event(int sock_fd, SDL_Event *new_event){
+int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	int err;
 	char message[50];
 	int new_x, new_y, dir;
-	player *list;
+	struct player *list;
+
+	memset(message, 0, 50*sizeof(char)); 
 
 	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
 	err = recv(sock_fd, message , sizeof(message), 0);
 	if (err == -1){
 		perror("receive: ");
-		exit(EXIT_FAILURE);
+		return -1;
 	} 
 
-	list = getPlayerHead();
+	list = getPlayerList();
 	if (list == NULL) return -1; // there are no players
 
 	while(list != NULL){
@@ -76,36 +129,62 @@ int rcv_event(int sock_fd, SDL_Event *new_event){
 		list = list->next;
 	}
 
-	printf("message: %s\n", message);
-    if(sscanf(message, "%d %d", &new_x, &new_y) == 2){
-		*new_event.type = SDL_MOUSEMOTION;
-		*new_event.motion.new_x = new_x;
-		*new_event.motion.new_y = new_y;
-		*new_event.motion.x = list->pacman->x;
-		*new_event.motion.y = list->pacman->y;
-	}
-	else if(sscanf(message, "%d", &dir) == 1){
+	if(sscanf(message, "%d", type) == 1){
+		if(*type == PACMAN){
+			if(sscanf(message, "%d %d %d", type, &new_x, &new_y) == 3){
 
-		new_event.type == SDL_KEYDOWN;
-		switch (dir)
-		{
-			case LEFT:  
-				*new_event.key.keysym.sym = SDLK_LEFT;
-				*new_event.motion.new_x = list->pacman->x --; break;
-			case RIGHT: 
-				*new_event.key.keysym.sym = SDLK_RIGHT;
-				*new_event.motion.new_x = list->pacman->x ++; break;
-			case UP:    
-				*new_event.key.keysym.sym = SDLK_UP;
-				*new_event.motion.y = list->pacman->y --; break;
-			case DOWN:  
-				*new_event.key.keysym.sym = SDLK_DOWN;
-				*new_event.motion.y = list->pacman->y ++; break;
+				printf("svr rcv event: %s\n", message);
+
+				struct position *new_position = malloc(sizeof(struct position));
+				// store new position in motion 
+				new_position->x = new_x;
+				new_position->y = new_y;
+				// store previous position in user data
+				new_event->user.data1 = list;
+				new_event->user.data2 = new_position;
+			}
+			else{
+				printf("error: invalid message\n");
+				return -1;
+			}
 		}
+		else if(*type == MONSTER){
+			if(sscanf(message, "%d %d", type, &dir) == 2){
+				printf("\nsvr rcv event: %s\n", message);
 
-		*new_event.motion.x = list->pacman->x;
-		*new_event.motion.y = list->pacman->y;
+				new_x = list->monster->x;
+				new_y = list->monster->y;
+				
+				switch (dir)
+				{
+					case LEFT:  new_x--; break;
+					case RIGHT: new_x++; break;
+					case UP: 	new_y--; break;
+					case DOWN: 	new_y++; break;
+				}
+				struct position *new_position = malloc(sizeof(struct position));
+				new_position->x = new_x;
+				new_position->y = new_y;
+
+				// store previous position in user data
+				new_event->user.data1 = list;
+				new_event->user.data2 = new_position;
+			}
+			else{
+				printf("error: invalid message\n");
+				return -1;
+			}
+		}
+		else{
+			printf("error: invalid message\n");
+			return -1;
+		}
 	}
+	else{
+		printf("error: invalid message\n");
+		return -1;
+	}
+	
 
 	return 0;
 }

@@ -4,13 +4,14 @@
 
 int board_x;
 int board_y;
+int done = 0;
 
 int main(int argc, char* argv[]){
 
 	SDL_Event event;
 	char *IP;
 	int port;
-	int done = 0, dir;
+	int dir = -1;
 	struct sockaddr_in server_addr;
 	struct player *my_player = malloc(sizeof(struct player));
 	my_player->monster = malloc(sizeof(struct position));
@@ -67,17 +68,14 @@ int main(int argc, char* argv[]){
 	
 	//receive and send thread id
 	pthread_t receive_id;
-	pthread_t send_id;
 
 	//receives messages from server
-	pthread_create(&receive_id, NULL, threadReceive, (void *)&my_player->sock_fd);
-	//send messages to server
-	//pthread_create(&send_id, NULL, threadSend, (void *)my_player);
-	
+	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
 
 	err = send_color(my_player->sock_fd, my_player->p_color);
 	if(err == -1) exit(EXIT_FAILURE);
 
+	
 	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
@@ -85,10 +83,12 @@ int main(int argc, char* argv[]){
 			}
 			//when the mouse mooves the monster also moves
 			if(event.type == SDL_MOUSEMOTION){
-				int x_new, y_new;
+				int x = 0, y = 0;
 
-				err = send_event(MOUSE,  event.motion.x,  event.motion.y,  -1, my_player);
-				if(err == -1) exit(EXIT_SUCESS);
+				get_board_place(event.motion.x, event.motion.y, &x, &y);
+
+				err = send_event(PACMAN,  x,  y,  -1, my_player);
+				if(err == -1) exit(EXIT_FAILURE);
 				
 			}
 			if(event.type == SDL_KEYDOWN){
@@ -101,37 +101,39 @@ int main(int argc, char* argv[]){
 					case SDLK_DOWN:  dir = DOWN; break;
 				}
 
-				err = send_event(MOUSE,  -1,  -1, dir, my_player);
-				if(err == -1) exit(EXIT_SUCESS);
+				err = send_event(MONSTER,  -1,  -1, dir, my_player);
+				if(err == -1) exit(EXIT_FAILURE);
 			}
 		}
 	}
-
-	return (NULL);
 	
 	printf("fim\n");
 	close(my_player->sock_fd);
 	close_board_windows();
+	return EXIT_SUCCESS;
 }
 
 void * threadReceive(void *arg){
 	int err;
-	pos_update msg;
-	int *sock_fd = (int*) arg;
-	char first_msg[128];
+	pos_update *msg = malloc(sizeof(pos_update));
+	player *my_player = (player*) arg;
 
-	err = recv(*sock_fd, &first_msg , sizeof(first_msg), 0);
-	if (err == -1){
-		perror("receive: ");
-		exit(EXIT_FAILURE);
-	} 
-
-	err = rcv_board(first_msg, &board_x, &board_y);
+	err = rcv_board(my_player->sock_fd, &board_x, &board_y);
 	if (err == -1) exit(EXIT_FAILURE);
 
 	create_board_window(board_x, board_y);
 
-	while((err = recv(*sock_fd, &msg , sizeof(msg), 0)) > 0){
+	err = rcv_position(my_player);
+	if (err == -1) exit(EXIT_FAILURE);
+
+	while(!done){
+		err = recv(my_player->sock_fd, msg , sizeof(&msg), 0);
+		if(err == -1){
+			perror("receive: ");
+			exit(EXIT_FAILURE);
+		}
+			
+		printf("clt rcv pos_update: %d %d %d\n", msg->new_x, msg->new_y, msg->character);
 
 		clear_place(msg->x, msg->y);
 
@@ -139,15 +141,15 @@ void * threadReceive(void *arg){
 		{
 			case MONSTER:  
 				paint_monster(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-								my_player->p_color->b)); 
+								my_player->p_color->b); 
 				break;
 			case PACMAN: 
 				paint_pacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-								my_player->p_color->b)); 
+								my_player->p_color->b); 
 				break;	
 			case SUPERPACMAN: 
 				paint_powerpacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-							my_player->p_color->b)); 
+							my_player->p_color->b); 
 				break;
 			case LEMON:    
 				paint_lemon(msg->new_x, msg->new_y); 
@@ -157,7 +159,7 @@ void * threadReceive(void *arg){
 				break;
 		}
 				
-    	printf("received %d byte %d %d %d\n", err, msg.character, msg->new_x, msg->new_y);
+    	printf("received %d byte %d %d %d\n", err, msg->character, msg->new_x, msg->new_y);
 
 		/*switch (event.key.keysym.sym)
 		{

@@ -3,14 +3,6 @@
 
 #include <pthread.h>
 
-#define EMPTY 0
-#define BRICK 1
-#define PACMAN 2
-#define MONSTER 3
-#define LEMON 4
-#define CHERRY 5
-#define SUPERPACMAN 6
-
 typedef struct pos_update{
   int character; 
   int x;
@@ -35,7 +27,7 @@ typedef struct player{
   int sock_fd;
   pthread_t thread_id;
   struct color *p_color;
-  int superpower;
+  int times;
   int score;
 
   struct position * pacman;
@@ -44,5 +36,10 @@ typedef struct player{
   struct player * next;
 }player;
 
+typedef struct fruits{
+  int x;
+  int y;
+  struct fruits * next;
+}fruits;
 
 #endif

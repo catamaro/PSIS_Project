@@ -2,46 +2,50 @@
 #include "server.h"
 
 struct player *playerHead = NULL;
+struct fruits *fruitHead = NULL;
 
-player *getPlayerHead(){
+player *getPlayerList(){
    return playerHead;
 }
+fruits *getFruitList(){
+   return fruitHead;
+}
+
 //display the list
 void printList()
 {
-   struct player *ptr = head;
+   struct player *ptr = playerHead;
    printf("\n[ ");
 
    //start from the beginning
    while (ptr != NULL)
    {
-      printf("(%d,%d,%d,%d,%d) ", ptr->id, ptr->monster->x, ptr->monster->y,
-             ptr->pacman->x, ptr->pacman->y);
+      printf("(id:%d,x:%d,y:%d,x:%d,y:%d,r:%d,g:%d,b:%d) ", ptr->id, ptr->monster->x, 
+               ptr->monster->y, ptr->pacman->x, ptr->pacman->y,ptr->p_color->r, 
+               ptr->p_color->g, ptr->p_color->b);
       ptr = ptr->next;
    }
 
    printf(" ]");
 }
-
 //delete first item
 struct player *deleteFirst()
 {
 
    //save reference to first link
-   struct player *tempLink = head;
+   struct player *tempLink = playerHead;
 
    //mark next to first link as first
-   head = head->next;
+   playerHead = playerHead->next;
    free(tempLink);
 
    //return the deleted link
    return tempLink;
 }
-
 //is list empty
 bool isEmpty()
 {
-   return head == NULL;
+   return playerHead == NULL;
 }
 
 int length()
@@ -49,23 +53,21 @@ int length()
    int length = 0;
    struct player *current;
 
-   for (current = head; current != NULL; current = current->next)
+   for (current = playerHead; current != NULL; current = current->next)
    {
       length++;
    }
 
    return length;
 }
-
 //find a link with given player
 struct player *findPlayer(int player)
 {
-
    //start from the first link
-   struct player *current = head;
+   struct player *current = playerHead;
 
    //if list is empty
-   if (head == NULL)
+   if (playerHead == NULL)
    {
       return NULL;
    }
@@ -89,17 +91,16 @@ struct player *findPlayer(int player)
    //if data found, return the current Link
    return current;
 }
-
 //delete a link with given player
 void deletePlayer(int player_id)
 {
 
    //start from the first link
-   struct player *current = head;
+   struct player *current = playerHead;
    struct player *previous = NULL;
 
    //if list is empty
-   if (head == NULL)
+   if (playerHead == NULL)
    {
       return;
    }
@@ -123,11 +124,11 @@ void deletePlayer(int player_id)
    }
 
    //found a match, update the link
-   if (current == head)
+   if (current == playerHead)
    {
       free(current);
       //change first to point to next link
-      head = head->next;
+      playerHead = playerHead->next;
    }
    else
    {
@@ -136,11 +137,10 @@ void deletePlayer(int player_id)
       free(current);
    }
 }
-
 // function to insert a player at required position
 player * insertPlayer(struct position *pos1, struct position *pos2, struct color *p_color, int player_id, int fd)
 {
-   if (head == NULL)
+   if (playerHead == NULL)
    {
       struct player *link = (struct player *)malloc(sizeof(struct player));
 
@@ -149,17 +149,18 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
       link->p_color = p_color;
       link->id = player_id;
       link->sock_fd = fd;
+      link->times = 0;
       link->next = NULL;
 
       //point it to old first player
-      link->next = head;
+      link->next = playerHead;
 
       //point first to new first player
-      head = link;
+      playerHead = link;
       return link;
    }
    //start from the first player
-   struct player *current = head;
+   struct player *current = playerHead;
 
    //navigate through list
    while (current->id != (player_id - 1))
@@ -175,6 +176,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
          link->p_color = p_color;
          link->id = player_id;
          link->sock_fd = fd;
+         link->times = 0;
          link->next = NULL;
 
          return link;
@@ -192,6 +194,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
    link->p_color = p_color;
    link->id = player_id;
    link->sock_fd = fd;
+   link->times = 0;
 
    if (current->next == NULL)
    {
@@ -205,19 +208,133 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
    }
    return link;
 }
-
+// free player list
 void freeList()
 {
    struct player *tmp;
 
-   while (head != NULL)
+   while (playerHead != NULL)
    {
-      tmp = head;
-      head = head->next;
+      tmp = playerHead;
+      playerHead = playerHead->next;
       close(tmp->sock_fd);
       free(tmp->pacman);
       free(tmp->monster);
       free(tmp->p_color);
       free(tmp);
    }
+}
+
+struct player *findPlayerPos(int x, int y, int type){
+//start from the first link
+   struct player *current = playerHead;
+
+   //if list is empty
+   if (playerHead == NULL)
+   {
+      return NULL;
+   }
+
+   //navigate through list
+   while (current != NULL)
+   {
+      //if it is last player
+      if (current->pacman->x == x && current->pacman->y == y && type == PACMAN)
+      {
+         return current;
+      }
+      if (current->monster->x == x && current->monster->y == y && type == MONSTER)
+      {
+         return current;
+      }
+  
+      //go to next link
+      current = current->next;
+   
+   }
+
+   //if data found, return the current Link
+   return NULL;
+}
+
+void AddFruitHead(int x, int y){
+    struct fruits* node;
+    node = (struct fruits*)malloc(sizeof(struct fruits));
+    node->x = x;
+    node->y = y;
+    node->next = fruitHead;
+    fruitHead = node;
+}
+
+void FreeFruitList(){
+    struct fruits *tmp;
+
+    while(fruitHead != NULL)
+    {
+      tmp = fruitHead;
+      fruitHead = fruitHead->next;
+      free(tmp);
+    }
+}
+
+void RemoveFruitPosition(int x, int y){
+  //start from the first link
+  struct fruits *current = fruitHead;
+  struct fruits *previous = NULL;
+
+  //if list is empty
+  if (fruitHead == NULL)
+  {
+     return;
+  }
+
+  //navigate through list
+  while (current->x != x && current->y != y)
+  {
+     //if it is the last fruit
+     if (current->next == NULL)
+     {
+        return;
+     }
+     else
+     {
+        //store reference to current link
+        previous = current;
+        //move to next link
+        current = current->next;
+     }
+  }
+
+  //found a match, update the link
+  if (current == fruitHead)
+  {
+     free(current);
+     //change first to point to next link
+     fruitHead = fruitHead->next;
+  }
+  else
+  {
+     //bypass the current link
+     previous->next = current->next;
+     free(current);
+  }
+}
+
+void RemoveFruitHead(){
+    struct fruits *tempLink = fruitHead;
+    if(fruitHead->next != NULL)
+    {
+      fruitHead = fruitHead->next;
+      free(tempLink);
+    }
+    else
+    {
+      free(tempLink);
+      fruitHead = NULL;
+    }
+}
+
+void FetchFruitHeadCoords(int* x, int* y){
+    *x = fruitHead->x;
+    *y = fruitHead->y;
 }
