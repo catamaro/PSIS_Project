@@ -12,7 +12,7 @@ struct player *findPlayerPos(int x, int y, int type);
 void deletePlayer(int player_id);
 
 player * insertPlayer(struct position *pos1, struct position *pos2,
-                        struct color *p_color, int player_id, int fd);
+                        struct color *rgb, int player_id, int fd);
 bool isEmpty();
 
 int length();

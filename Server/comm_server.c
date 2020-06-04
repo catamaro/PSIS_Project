@@ -19,7 +19,7 @@ int send_board_dim(int x, int y, int sock_fd){
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
-		return -1;
+		exit(EXIT_FAILURE);
 	}
 
 	printf("\nsvr snd board size: %s\n", message);
@@ -36,45 +36,81 @@ int send_board_setup(int sock_fd){
 
 	for (current = head; current != NULL; current = current->next)
 	{
-		err = send_update(sock_fd, BRICK, -1, -1, current->x, current->y);
+		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
 	}
+
 	head = getFruitList();
 	current = head;
 
 	for (current = head; current != NULL; current = current->next)
 	{
-		err = send_update(sock_fd, -1, -1, CHERRY, current->x, current->y);
+		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
 	}
+	
+	// end of messages of type 1
+	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
+	if(err == -1) return -1;
 
 	for (currentPlayer = headPlayer; currentPlayer != NULL; currentPlayer = currentPlayer->next)
 	{
-		err = send_update(sock_fd, MONSTER, -1, -1, currentPlayer->monster->x, currentPlayer->monster->y);
+
+		err = send_init_msg(sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
 		if(err == -1) return -1;
-		err = send_update(sock_fd, PACMAN, -1, -1, currentPlayer->pacman->x, currentPlayer->pacman->y);
+
+		if(currentPlayer->times == 0)
+			err = send_init_msg(sock_fd, PACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
+		else
+			err = send_init_msg(sock_fd, SUPERPACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
+		
 		if(err == -1) return -1;
 	}
+	
+	// end of messages of type 2
+	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
+	if(err == -1) return -1;
 
 	return 0;
 }
 
-int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y){
-	struct pos_update *message = malloc(sizeof(struct pos_update));
+int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 	int err;
 
-	message->character = type;
-	message->new_x = new_x;
-	message->new_y = new_y;
-	message->x = x;
-	message->y = y;
-
-	err = write(sock_fd, message, sizeof(*message)); 
-	if(err <= 0){
-		perror("write: ");
-		close(sock_fd);
-		return -1;
+	if (type == PACMAN || type == MONSTER || type == SUPERPACMAN){
+		struct init_msg_2 *message = malloc(sizeof(struct init_msg_2));
+		message->r = rgb->r;
+		message->g = rgb->g;
+		message->b = rgb->b;
+		message->character = type;
+		message->x = x;
+		message->y = y;
+		
+		err = write(sock_fd, message, sizeof(*message)); 
+		if(err <= 0){
+			perror("write: ");
+			close(sock_fd);
+			exit(EXIT_FAILURE);
+		}
+		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->x, message->y, 
+					message->r, message->g, message->b);
 	}
+	else{
+		struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
+		message->character = type;
+		message->x = x;
+		message->y = y;
+
+		err = write(sock_fd, message, sizeof(*message)); 
+		if(err <= 0){
+			perror("write: ");
+			close(sock_fd);
+			exit(EXIT_FAILURE);
+		}
+		printf("\nsvr snd initial positions: %d %d\n", message->x, message->y);
+	}
+
+	
 	return 0;
 }
 
@@ -94,7 +130,7 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
-		return -1;
+		exit(EXIT_FAILURE);
 	}
 
 	printf("\nsvr snd initial positions: %s\n", message);
@@ -104,10 +140,6 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 
 int rcv_color(int sock_fd, color *new_color){
     int err;
-	bool unique_color = true;
-	struct player *player_list;
-
-	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
 	err = recv(sock_fd, new_color , sizeof(*new_color), 0);	
 	if(err <= 0){
@@ -117,46 +149,20 @@ int rcv_color(int sock_fd, color *new_color){
 	} 
 
 	printf("\nsvr rcv color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
-
-	player_list = getPlayerList();
+	
+	return 0;
+	/*player_list = getPlayerList();
 	if (player_list == NULL) return 0; // there are no players
 
 	while(player_list != NULL && unique_color){
-		if(player_list->p_color->r == new_color->r && player_list->p_color->g == new_color->g && 
-			player_list->p_color->b == new_color->b) unique_color = false;
+		if(player_list->rgb->r == new_color->r && player_list->rgb->g == new_color->g && 
+			player_list->rgb->b == new_color->b) unique_color = false;
 		player_list = player_list->next;
 	}
 
 	if(!unique_color) return -1;
-	else return 0;
-
-
-	/*if(!unique_color){
-		err = sprintf(message, "%d\n", 0);
-		if(err == -1){
-			printf("error: cannot create message\n");
-			return -1;
-		}
-		err = write(sock_fd, message, strlen(message)); 
-		if(err == -1){
-			perror("write: ");
-			exit(EXIT_FAILURE);
-		}
-		//rcv_color(sock_fd, new_color);	
-		return -1;
-	}
-	else{
-		err = sprintf(message, "%d\n", 1);
-		if(err == -1){
-			printf("error: cannot create message\n");
-			return -1;
-		}
-		err = write(sock_fd, message, strlen(message)); 
-		if(err == -1){
-			perror("write: ");
-			exit(EXIT_FAILURE);
-		}
-	} */
+	else return 0;*/
+	
 }
 
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
@@ -243,18 +249,39 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	return 0;
 }
 
-int broadcast_update(int x_new, int y_new, int x, int y, int character){
+int broadcast_update(int x_new, int y_new, int x, int y, int character, struct color *rgb){
 	struct player *head = getPlayerList();
 	struct player *current = head;
 	int err;
 
 	for (current = head; current != NULL; current = current->next)
 	{
-		err = send_update(current->sock_fd, character, x, y, x_new, y_new);
+		err = send_update(current->sock_fd, character, x, y, x_new, y_new, rgb);
 		if(err == -1) return -1;
 	}
 
 	return 0;
 }
 	
+int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struct color *rgb){
+	struct update_msg *message = malloc(sizeof(struct update_msg));
+	int err;
+
+	message->character = type;
+	message->new_x = new_x;
+	message->new_y = new_y;
+	message->x = x;
+	message->y = y;
+	message->r = rgb->r;
+	message->g = rgb->g;
+	message->b = rgb->b;
+
+	err = write(sock_fd, message, sizeof(*message)); 
+	if(err <= 0){
+		perror("write: ");
+		close(sock_fd);
+		exit(EXIT_FAILURE);
+	}
+	return 0;
+}
 

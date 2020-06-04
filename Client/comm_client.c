@@ -1,7 +1,7 @@
 #include "structs.h"
 #include "comm.h"
 
-int rcv_board(int sock_fd, int *board_x, int *board_y){
+int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
     int x, y, err;
 	char message[50];
 
@@ -46,10 +46,10 @@ int rcv_position(struct player *my_player){
 		my_player->monster->x = x2;
 		my_player->monster->y = y2;
 
-		paint_pacman(my_player->pacman->x, my_player->pacman->y , my_player->p_color->r, 
-						my_player->p_color->g, my_player->p_color->b);
-		paint_monster(my_player->monster->x, my_player->monster->y , my_player->p_color->r, 
-						my_player->p_color->g, my_player->p_color->b);
+		paint_pacman(my_player->pacman->x, my_player->pacman->y , my_player->rgb->r, 
+						my_player->rgb->g, my_player->rgb->b);
+		paint_monster(my_player->monster->x, my_player->monster->y , my_player->rgb->r, 
+						my_player->rgb->g, my_player->rgb->b);
 
 		return 0;
     }
@@ -72,28 +72,6 @@ int send_color(int sock_fd, struct color *new_color){
 	printf("\nclt snd color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
 
 	return 0;
-
-	// receives confirmation of valid color
-	/*err = recv(sock_fd, message , sizeof(message), 0);	
-	if (err == -1){
-		perror("receive: ");
-		exit(EXIT_FAILURE);
-	} 
-
-	printf("clt rcv color confirm: %s\n", message);
-
-	if(sscanf(message, "%d", &valid) == 1){
-		if(valid == 0){
-			printf("error: color already in use\n");
-			return -1;
-		}
-		else if(valid == 1) printf("color is avaiable\n");
-		else return -1;
-    }
-    else{
-        printf("error: incorrect initial message");
-        return -1;
-    }*/
 }
 
 int send_event(int type, int new_x, int new_y, int direction, struct player *my_player){
@@ -116,7 +94,7 @@ int send_event(int type, int new_x, int new_y, int direction, struct player *my_
 			close(my_player->sock_fd);
 			return -1;
 		} 
-		printf("clt snd pos_update: %s %d\n", message, PACMAN);
+		printf("clt snd update_msg: %s %d\n", message, PACMAN);
 		fflush(stdout);
 	}
 	else if(type == MONSTER){
@@ -132,7 +110,7 @@ int send_event(int type, int new_x, int new_y, int direction, struct player *my_
 			close(my_player->sock_fd);
 			return -1;
 		} 
-		printf("clt snd pos_update: %s %d\n", message, MONSTER);
+		printf("clt snd update_msg: %s %d\n", message, MONSTER);
 		fflush(stdout);
 	}
 	return 0;

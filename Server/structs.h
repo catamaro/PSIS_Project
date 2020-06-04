@@ -3,15 +3,39 @@
 
 #include <pthread.h>
 
-typedef struct pos_update
+// when something moves update position
+typedef struct update_msg
 {
   int character;
   int x;
   int y;
   int new_x;
   int new_y;
-} pos_update;
+  int r;
+  int g;
+  int b;
+} update_msg;
 
+// message when new player connects for fruits and bricks
+typedef struct init_msg_1
+{
+  int character;
+  int x;
+  int y;
+} init_msg_1;
+
+// message when new player connects for pacman and monster
+typedef struct init_msg_2
+{
+  int character;
+  int x;
+  int y;
+  int r;
+  int g;
+  int b;
+} init_msg_2;
+
+// rgb code for pacman and monster
 typedef struct color
 {
   int r;
@@ -19,19 +43,13 @@ typedef struct color
   int b;
 } color;
 
-struct position
-{
-  int x;
-  int y;
-  int character;
-} position;
-
+// struct with player info
 typedef struct player
 {
   int id;
   int sock_fd;
   pthread_t thread_id;
-  struct color *p_color;
+  struct color *rgb;
   int times;
   int score;
 
@@ -41,11 +59,20 @@ typedef struct player
   struct player *next;
 } player;
 
+// struct with fruits and bricks info
 typedef struct pos_list
 {
   int x;
   int y;
+  int character;
   struct pos_list *next;
 } pos_list;
+
+// struct for positions
+struct position
+{
+  int x;
+  int y;
+} position;
 
 #endif

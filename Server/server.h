@@ -33,12 +33,12 @@ int ** loadBoard(char* arg);
 void bounceBounds(int x1, int y1, int* x_new, int* y_new);
 void RandomPositionConnect(int* x1, int* x2, int* y1, int* y2);
 void RandomPositionRules(int* x, int* y);
-void checkRulesMonster(struct player* dealer, struct player* receiver,
-                        int x_new, int y_new);
+void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_new, 
+						int *y_new, int *x_new_2, int *y_new_2);
 void checkRulesPacman(struct player* dealer, struct player* receiver,
-                        int x_new, int y_new);
-void checkRulesSuperPacman(struct player* dealer, struct player* receiver,
-                        int x_new, int y_new);
+                        int *x_new, int *y_new, int *x_new_2, int *y_new_2);
+void checkRulesSuperPacman(struct player *dealer, struct player *receiver, int *x_new, 
+						int *y_new, int *x_new_2, int *y_new_2);
 void ManageFruits();
 
 #endif

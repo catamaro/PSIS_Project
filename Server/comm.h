@@ -18,8 +18,9 @@ int send_board_dim(int x, int y, int sock_fd);
 int rcv_color(int sock_fd, color *new_color);
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type);
 int send_position(struct position * pacman, struct position *monster, int sock_fd);
-int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y);
+int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struct color *rgb);
 int send_board_setup(int sock_fd);
-int broadcast_update(int x_new, int y_new, int x, int y, int character);
+int broadcast_update(int x_new, int y_new, int x, int y, int character, struct color *new_color);
+int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb);
 
 #endif

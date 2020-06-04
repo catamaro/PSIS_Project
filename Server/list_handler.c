@@ -10,6 +10,7 @@ struct pos_list *brickHead = NULL;
 player *getPlayerList(){
    return playerHead;
 }
+
 pos_list *getFruitList(){
    return fruitHead;
 }
@@ -28,8 +29,8 @@ void printList()
    while (ptr != NULL)
    {
       printf("(id:%d,x:%d,y:%d,x:%d,y:%d,r:%d,g:%d,b:%d) ", ptr->id, ptr->monster->x,
-               ptr->monster->y, ptr->pacman->x, ptr->pacman->y,ptr->p_color->r,
-               ptr->p_color->g, ptr->p_color->b);
+               ptr->monster->y, ptr->pacman->x, ptr->pacman->y,ptr->rgb->r,
+               ptr->rgb->g, ptr->rgb->b);
       ptr = ptr->next;
    }
 
@@ -158,7 +159,7 @@ void deletePlayer(int player_id)
    }
 }
 // function to insert a player at required position
-player * insertPlayer(struct position *pos1, struct position *pos2, struct color *p_color, int player_id, int fd)
+player * insertPlayer(struct position *pos1, struct position *pos2, struct color *rgb, int player_id, int fd)
 {
    if (playerHead == NULL)
    {
@@ -166,7 +167,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
 
       link->pacman = pos1;
       link->monster = pos2;
-      link->p_color = p_color;
+      link->rgb = rgb;
       link->id = player_id;
       link->sock_fd = fd;
       link->times = 0;
@@ -177,6 +178,8 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
 
       //point first to new first player
       playerHead = link;
+
+
       return link;
    }
    //start from the first player
@@ -193,7 +196,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
 
          link->pacman = pos1;
          link->monster = pos2;
-         link->p_color = p_color;
+         link->rgb = rgb;
          link->id = player_id;
          link->sock_fd = fd;
          link->times = 0;
@@ -211,7 +214,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
 
    link->pacman = pos1;
    link->monster = pos2;
-   link->p_color = p_color;
+   link->rgb = rgb;
    link->id = player_id;
    link->sock_fd = fd;
    link->times = 0;
@@ -226,6 +229,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
       link->next = current->next;
       current->next = link;
    }
+
    return link;
 }
 // free player list
@@ -240,7 +244,7 @@ void freeList()
       close(tmp->sock_fd);
       free(tmp->pacman);
       free(tmp->monster);
-      free(tmp->p_color);
+      free(tmp->rgb);
       free(tmp);
    }
 }
@@ -284,10 +288,17 @@ void AddPosHead(int x, int y, int type){
     node->y = y;
     if(type == BRICK){
         node->next = brickHead;
+        node->character = BRICK;
         brickHead = node;
     }
-    else if(type == FRUIT){
+    else if(type == CHERRY){
         node->next = fruitHead;
+        node->character = CHERRY;
+        fruitHead = node;
+    }
+    else if(type == LEMON){
+        node->next = fruitHead;
+        node->character = LEMON;
         fruitHead = node;
     }
 }

@@ -2,8 +2,6 @@
 #include "structs.h"
 #include "comm.h"
 
-int board_x;
-int board_y;
 int done = 0;
 
 int main(int argc, char* argv[]){
@@ -16,7 +14,7 @@ int main(int argc, char* argv[]){
 	struct player *my_player = malloc(sizeof(struct player));
 	my_player->monster = malloc(sizeof(struct position));
 	my_player->pacman = malloc(sizeof(struct position));
-	my_player->p_color = malloc(sizeof(struct color));
+	my_player->rgb = malloc(sizeof(struct color));
 
 	if(argc != 6){
 		printf("error");
@@ -29,15 +27,15 @@ int main(int argc, char* argv[]){
 			printf("error: argv[2] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
-		if(sscanf(argv[3], "%d", &(my_player->p_color->r)) != 1){
+		if(sscanf(argv[3], "%d", &(my_player->rgb->r)) != 1){
 			printf("error: argv[3] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
-		if(sscanf(argv[4], "%d", &(my_player->p_color->g)) != 1){
+		if(sscanf(argv[4], "%d", &(my_player->rgb->g)) != 1){
 			printf("error: argv[4] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
-		if(sscanf(argv[5], "%d", &(my_player->p_color->b)) != 1){
+		if(sscanf(argv[5], "%d", &(my_player->rgb->b)) != 1){
 			printf("error: argv[5] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
@@ -72,7 +70,7 @@ int main(int argc, char* argv[]){
 	//receives messages from server
 	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
 
-	err = send_color(my_player->sock_fd, my_player->p_color);
+	err = send_color(my_player->sock_fd, my_player->rgb);
 	if(err == -1) exit(EXIT_FAILURE);
 
 	
@@ -116,106 +114,111 @@ int main(int argc, char* argv[]){
 }
 
 void * threadReceive(void *arg){
-	int err;
-	pos_update *msg = malloc(sizeof(pos_update));
+	int err, count = 0;
 	player *my_player = (player*) arg;
+	struct init_msg_1 *message1 = malloc(sizeof(struct init_msg_1));
+	struct init_msg_2 *message2 = malloc(sizeof(struct init_msg_2));
+	struct update_msg *message = malloc(sizeof(update_msg));
+	struct color *rgb = malloc(sizeof(color));
+	int new_x, new_y, character;
+	int board_x, board_y;
 
-	err = rcv_board(my_player->sock_fd, &board_x, &board_y);
+
+	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
 	if (err == -1) exit(EXIT_FAILURE);
-
+	printf("board x: %d board y: %d\n", board_x, board_y);
+	 
 	create_board_window(board_x, board_y);
 
-	err = rcv_position(my_player);
-	if (err == -1) exit(EXIT_FAILURE);
-
 	while(!done){
-		err = recv(my_player->sock_fd, msg , sizeof(*msg), 0);
-		if(err <= 0){
-			perror("receive ");
-			close(my_player->sock_fd);
-			exit(EXIT_FAILURE);
+		// receive board info type 1 fruits and bricks 
+		if(count == 0){
+			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
+			if(err <= 0){
+				perror("receive ");
+				close(my_player->sock_fd);
+				exit(EXIT_FAILURE);
+			}
+			if(message1->character == -1){
+				count++;
+				printf("final message no more bricks and fruits\n");
+				continue;
+			}
+			character = message1->character;
+			new_x = message1->x;
+			new_y = message1->y;
+		}
+		// receive board info type 1 pacman and monster
+		else if(count == 1){
+			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
+			if(err <= 0){
+				perror("receive ");
+				close(my_player->sock_fd);
+				exit(EXIT_FAILURE);
+			}
+			if(message2->character == -1){
+				count++;
+				printf("final message no more characters\n");
+				continue;
+			}
+			character = message2->character;
+			new_x = message2->x;
+			new_y = message2->y;
+			printf("%d\n", message2->r);
+			printf("%d\n", message2->g);
+			printf("%d\n", message2->b);
+			rgb->r = message2->r;
+			rgb->g = message2->g;
+			rgb->b = message2->b;
+		}
+		// receive board position update
+		else if(count == 2){
+			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
+			if(err <= 0){
+				perror("receive ");
+				close(my_player->sock_fd);
+				exit(EXIT_FAILURE);
+			}
+
+			clear_place(message->x, message->y);
+			character = message->character;
+			new_x = message->new_x;
+			new_y = message->new_x;
+			rgb->r = message->r;
+			rgb->g = message->g;
+			rgb->b = message->b;
 		}
 			
-		printf("clt rcv pos_update: %d %d %d\n", msg->new_x, msg->new_y, msg->character);
-
-		if(msg->x != -1) clear_place(msg->x, msg->y);
-
-		switch (msg->character)
+		switch (character)
 		{
 			case MONSTER:  
-				paint_monster(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-								my_player->p_color->b); 
-				my_player->monster->x = msg->new_x;
-				my_player->monster->y = msg->new_y;
+				paint_monster(new_x,new_y, rgb->r,rgb->g, rgb->b); 
+				my_player->monster->x = new_x;
+				my_player->monster->y = new_y;
 				break;
 			case PACMAN: 
-				paint_pacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-								my_player->p_color->b); 
-				my_player->pacman->x = msg->new_x;
-				my_player->pacman->y = msg->new_y;
+				paint_pacman(new_x,new_y, rgb->r,rgb->g, rgb->b); 
+				my_player->pacman->x = new_x;
+				my_player->pacman->y = new_y;
 				break;	
 			case SUPERPACMAN: 
-				paint_powerpacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
-							my_player->p_color->b); 
+				paint_powerpacman(new_x,new_y, rgb->r,rgb->g, rgb->b); 
+				my_player->pacman->x = new_x;
+				my_player->pacman->y = new_y;
 				break;
 			case LEMON:    
-				paint_lemon(msg->new_x, msg->new_y); 
+				paint_lemon(new_x,new_y); 
 				break;
 			case CHERRY: 
-				paint_cherry(msg->new_x, msg->new_y); 
+				paint_cherry(new_x,new_y); 
 				break;
 			case BRICK: 
-				paint_brick(msg->new_x, msg->new_y); 
+				paint_brick(new_x,new_y); 
 				break;
 		}
 				
-    	printf("received %d byte %d %d %d\n", err, msg->character, msg->new_x, msg->new_y);
+    	printf("received %d byte %d %d %d\n", err,character,new_x,new_y);
 	}
 
 	return (NULL);
 }
-
-/*void * threadSend(void *arg){
-	
-	struct player *my_player = (struct player *) arg;
-	int err, dir;
-
-	err = send_color(my_player->sock_fd, my_player->p_color);
-	if(err == -1) exit(EXIT_FAILURE);
-
-	while(!done){
-		while (SDL_PollEvent(&event)) {
-			if(event.type == SDL_QUIT) {
-				done = SDL_TRUE;
-			}
-			//when the mouse mooves the monster also moves
-			if(event.type == SDL_MOUSEMOTION){
-				int x_new, y_new;
-
-				//this fucntion return the place cwher the mouse cursor is
-				get_board_place(event.motion .x, event.motion .y,
-												&x_new, &y_new);
-
-				err = send_event(MOUSE,  x_new,  y_new,  -1, my_player);
-				if(err == -1) exit(EXIT_SUCESS);
-				
-			}
-			if(event.type == SDL_KEYDOWN){
-
-				switch (event.key.keysym.sym)
-				{
-					case SDLK_LEFT:  dir = LEFT; break;
-					case SDLK_RIGHT: dir = RIGHT; break;
-					case SDLK_UP:    dir = UP; break;
-					case SDLK_DOWN:  dir = DOWN; break;
-				}
-
-				err = send_event(MOUSE,  -1,  -1, dir, my_player);
-				if(err == -1) exit(EXIT_SUCESS);
-			}
-		}
-	}
-
-	return (NULL);
-}*/
-
