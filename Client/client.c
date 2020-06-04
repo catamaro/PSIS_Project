@@ -73,7 +73,6 @@ int main(int argc, char* argv[]){
 	err = send_color(my_player->sock_fd, my_player->rgb);
 	if(err == -1) exit(EXIT_FAILURE);
 
-	
 	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {

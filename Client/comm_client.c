@@ -63,7 +63,7 @@ int send_event(int type, int new_x, int new_y, int dir, struct player *my_player
 	
 	else if(type == MONSTER){
 
-		new_event->character = PACMAN;
+		new_event->character = MONSTER;
 		new_event->x = dir;
 		new_event->y = -1;
 		
