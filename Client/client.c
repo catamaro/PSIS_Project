@@ -87,6 +87,8 @@ int main(int argc, char* argv[]){
 
 				get_board_place(event.motion.x, event.motion.y, &x, &y);
 
+				if(x == my_player->pacman->x && y == my_player->pacman->y) continue;
+
 				err = send_event(PACMAN,  x,  y,  -1, my_player);
 				if(err == -1) exit(EXIT_FAILURE);
 				
@@ -143,10 +145,14 @@ void * threadReceive(void *arg){
 			case MONSTER:  
 				paint_monster(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
 								my_player->p_color->b); 
+				my_player->monster->x = msg->new_x;
+				my_player->monster->y = msg->new_y;
 				break;
 			case PACMAN: 
 				paint_pacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 
 								my_player->p_color->b); 
+				my_player->pacman->x = msg->new_x;
+				my_player->pacman->y = msg->new_y;
 				break;	
 			case SUPERPACMAN: 
 				paint_powerpacman(msg->new_x, msg->new_y, my_player->p_color->r,my_player->p_color->g, 

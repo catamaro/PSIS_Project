@@ -58,12 +58,20 @@ bool isEmpty()
 int length(int type)
 {
    int length = 0;
-   struct player *current;
-   struct player *head;
+   struct player *currentPlayer = playerHead;
+   struct pos_list *current;
+   struct pos_list *head;
 
    if(type == FRUIT) head = fruitHead;
    else if(type == BRICK) head= brickHead;
-   else head = playerHead;
+   else{
+
+      for (currentPlayer = playerHead; currentPlayer != NULL; currentPlayer = currentPlayer->next)
+      {
+         length++;
+      }
+      return length;
+   } 
 
    for (current = head; current != NULL; current = current->next)
    {

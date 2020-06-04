@@ -86,7 +86,8 @@ int main(int argc, char* argv[]){
 
 				x_new = new_position->x;
 				y_new = new_position->y;
-				
+
+				if(x == x_new && y == y_new) continue;
 
 				if(event.type == Event_MoveMonster){
 					player2 = findPlayerPos(x_new, y_new, MONSTER);
@@ -483,7 +484,6 @@ void checkRulesMonster(struct player* dealer, struct player* receiver, int x_new
 }
 
 void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new, int y_new){
-	printf("I do print? %d %d\n", x_new, y_new);
 	// Pacman moving to empty place
 	if(board[x_new][y_new] == EMPTY){
 		int old_x = dealer->pacman->x;
