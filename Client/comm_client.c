@@ -8,10 +8,11 @@ int rcv_board(int sock_fd, int *board_x, int *board_y){
 	memset(message, 0, 50*sizeof(char)); 
 
 	err = recv(sock_fd, &message , sizeof(message), 0);
-	if (err == -1){
-		perror("receive: ");
+	if(err <= 0){
+		perror("receive ");
+		close(sock_fd);
 		exit(EXIT_FAILURE);
-	} 
+	}
 
     printf("\nclt rcv board size: %s\n", message);
     if(sscanf(message, "%d %d", &x, &y) == 2){
@@ -26,16 +27,17 @@ int rcv_board(int sock_fd, int *board_x, int *board_y){
 }
 
 int rcv_position(struct player *my_player){
-	 int x1, y1, x2, y2, err;
+	int x1, y1, x2, y2, err;
 	char message[50];
 
 	memset(message, 0, 50*sizeof(char)); 
 
 	err = recv(my_player->sock_fd, &message , sizeof(message), 0);
-	if (err == -1){
-		perror("receive: ");
+	if(err <= 0){
+		perror("receive ");
+		close(my_player->sock_fd);
 		exit(EXIT_FAILURE);
-	} 
+	}
 
     printf("\nclt rcv initial position %s\n", message);
     if(sscanf(message, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4){

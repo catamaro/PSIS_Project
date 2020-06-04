@@ -3,13 +3,13 @@
 
 #include "UI_library.h"
 #include <pthread.h>
-#include <sys/socket.h> 
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include <unistd.h>
 
 #define LEFT 0
@@ -24,6 +24,7 @@
 #define LEMON 4
 #define CHERRY 5
 #define SUPERPACMAN 6
+#define FRUIT 7
 #define MAX_PLAYERS_WAITING 5
 
 void * threadAccept(void *arg);
@@ -32,11 +33,11 @@ int ** loadBoard(char* arg);
 void bounceBounds(int x1, int y1, int* x_new, int* y_new);
 void RandomPositionConnect(int* x1, int* x2, int* y1, int* y2);
 void RandomPositionRules(int* x, int* y);
-void checkRulesMonster(struct player* dealer, struct player* receiver, 
+void checkRulesMonster(struct player* dealer, struct player* receiver,
                         int x_new, int y_new);
-void checkRulesPacman(struct player* dealer, struct player* receiver, 
+void checkRulesPacman(struct player* dealer, struct player* receiver,
                         int x_new, int y_new);
-void checkRulesSuperPacman(struct player* dealer, struct player* receiver, 
+void checkRulesSuperPacman(struct player* dealer, struct player* receiver,
                         int x_new, int y_new);
 void ManageFruits();
 

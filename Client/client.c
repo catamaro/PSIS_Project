@@ -127,15 +127,16 @@ void * threadReceive(void *arg){
 	if (err == -1) exit(EXIT_FAILURE);
 
 	while(!done){
-		err = recv(my_player->sock_fd, msg , sizeof(&msg), 0);
-		if(err == -1){
-			perror("receive: ");
+		err = recv(my_player->sock_fd, msg , sizeof(*msg), 0);
+		if(err <= 0){
+			perror("receive ");
+			close(my_player->sock_fd);
 			exit(EXIT_FAILURE);
 		}
 			
 		printf("clt rcv pos_update: %d %d %d\n", msg->new_x, msg->new_y, msg->character);
 
-		clear_place(msg->x, msg->y);
+		if(msg->x != -1) clear_place(msg->x, msg->y);
 
 		switch (msg->character)
 		{
@@ -157,17 +158,12 @@ void * threadReceive(void *arg){
 			case CHERRY: 
 				paint_cherry(msg->new_x, msg->new_y); 
 				break;
+			case BRICK: 
+				paint_brick(msg->new_x, msg->new_y); 
+				break;
 		}
 				
     	printf("received %d byte %d %d %d\n", err, msg->character, msg->new_x, msg->new_y);
-
-		/*switch (event.key.keysym.sym)
-		{
-			case SDLK_LEFT:  x_new--; break;
-			case SDLK_RIGHT: x_new++; break;
-			case SDLK_UP:    y_new--; break;
-			case SDLK_DOWN:  y_new++; break;
-		}*/
 	}
 
 	return (NULL);

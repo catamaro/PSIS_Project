@@ -26,6 +26,56 @@ int send_board(int x, int y, int sock_fd){
     return 0;
 }
 
+int send_setup(int sock_fd){
+	struct pos_list *head = getBrickList();
+	struct pos_list *current = head;
+	struct player *headPlayer = getPlayerList();
+	struct player *currentPlayer = headPlayer;
+    int err;
+
+	for (current = head; current != NULL; current = current->next)
+	{
+		err = send_update(sock_fd, BRICK, -1, -1, current->x, current->y);
+		if(err == -1) return -1;
+	}
+	head = getFruitList();
+	current = head;
+
+	for (current = head; current != NULL; current = current->next)
+	{
+		err = send_update(sock_fd, -1, -1, CHERRY, current->x, current->y);
+		if(err == -1) return -1;
+	}
+
+	for (currentPlayer = headPlayer; currentPlayer != NULL; currentPlayer = currentPlayer->next)
+	{
+		err = send_update(sock_fd, MONSTER, -1, -1, currentPlayer->monster->x, currentPlayer->monster->y);
+		if(err == -1) return -1;
+		err = send_update(sock_fd, PACMAN, -1, -1, currentPlayer->pacman->x, currentPlayer->pacman->y);
+		if(err == -1) return -1;
+	}
+
+	return 0;
+}
+
+int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y){
+	struct pos_update *message = malloc(sizeof(struct pos_update));
+	int err;
+
+	message->character = type;
+	message->new_x = new_x;
+	message->new_y = new_y;
+	message->x = x;
+	message->y = y;
+
+	err = write(sock_fd, message, sizeof(*message)); 
+	if(err == -1){
+		perror("write");
+		return -1;
+	}
+	return 0;
+}
+
 int send_position(struct position *pacman, struct position *monster, int sock_fd){
 	char message[50];
     int err;
@@ -57,8 +107,9 @@ int rcv_color(int sock_fd, color *new_color){
 	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
 	err = recv(sock_fd, new_color , sizeof(*new_color), 0);	
-	if (err == -1){
-		perror("receive: ");
+	if(err <= 0){
+		perror("receive ");
+		close(sock_fd);
 		exit(EXIT_FAILURE);
 	} 
 
@@ -110,16 +161,18 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	char message[50];
 	int new_x, new_y, dir;
 	struct player *list;
+	struct position *new_position = malloc(sizeof(struct position));
 
 	memset(message, 0, 50*sizeof(char)); 
 
 	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
 	err = recv(sock_fd, message , sizeof(message), 0);
-	if (err == -1){
-		perror("receive: ");
-		return -1;
-	} 
+	if(err <= 0){
+		perror("receive ");
+		close(sock_fd);
+		exit(EXIT_FAILURE);
+	}
 
 	list = getPlayerList();
 	if (list == NULL) return -1; // there are no players
@@ -135,7 +188,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 
 				printf("svr rcv event: %s\n", message);
 
-				struct position *new_position = malloc(sizeof(struct position));
 				// store new position in motion 
 				new_position->x = new_x;
 				new_position->y = new_y;
@@ -162,7 +214,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 					case UP: 	new_y--; break;
 					case DOWN: 	new_y++; break;
 				}
-				struct position *new_position = malloc(sizeof(struct position));
 				new_position->x = new_x;
 				new_position->y = new_y;
 
@@ -189,4 +240,18 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	return 0;
 }
 
+int broadcast_update(int x_new, int y_new, int x, int y, int character){
+	struct player *head = getPlayerList();
+	struct player *current = head;
+	int err;
+
+	for (current = head; current != NULL; current = current->next)
+	{
+		err = send_update(current->sock_fd, character, x, y, x_new, y_new);
+		if(err == -1) return -1;
+	}
+
+	return 0;
+}
+	
 

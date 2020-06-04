@@ -3,26 +3,31 @@
 
 #include <pthread.h>
 
-typedef struct pos_update{
-  int character; 
+typedef struct pos_update
+{
+  int character;
   int x;
   int y;
   int new_x;
   int new_y;
 } pos_update;
 
-typedef struct color{
-  int r; 
+typedef struct color
+{
+  int r;
   int g;
   int b;
 } color;
 
-struct position {
-   int x;
-   int y;
-}position;
+struct position
+{
+  int x;
+  int y;
+  int character;
+} position;
 
-typedef struct player{
+typedef struct player
+{
   int id;
   int sock_fd;
   pthread_t thread_id;
@@ -30,16 +35,17 @@ typedef struct player{
   int times;
   int score;
 
-  struct position * pacman;
-  struct position * monster;
+  struct position *pacman;
+  struct position *monster;
 
-  struct player * next;
-}player;
+  struct player *next;
+} player;
 
-typedef struct fruits{
+typedef struct pos_list
+{
   int x;
   int y;
-  struct fruits * next;
-}fruits;
+  struct pos_list *next;
+} pos_list;
 
 #endif

@@ -1,14 +1,21 @@
 #include "structs.h"
 #include "server.h"
 
+
+
 struct player *playerHead = NULL;
-struct fruits *fruitHead = NULL;
+struct pos_list *fruitHead = NULL;
+struct pos_list *brickHead = NULL;
 
 player *getPlayerList(){
    return playerHead;
 }
-fruits *getFruitList(){
+pos_list *getFruitList(){
    return fruitHead;
+}
+
+pos_list *getBrickList(){
+   return brickHead;
 }
 
 //display the list
@@ -20,8 +27,8 @@ void printList()
    //start from the beginning
    while (ptr != NULL)
    {
-      printf("(id:%d,x:%d,y:%d,x:%d,y:%d,r:%d,g:%d,b:%d) ", ptr->id, ptr->monster->x, 
-               ptr->monster->y, ptr->pacman->x, ptr->pacman->y,ptr->p_color->r, 
+      printf("(id:%d,x:%d,y:%d,x:%d,y:%d,r:%d,g:%d,b:%d) ", ptr->id, ptr->monster->x,
+               ptr->monster->y, ptr->pacman->x, ptr->pacman->y,ptr->p_color->r,
                ptr->p_color->g, ptr->p_color->b);
       ptr = ptr->next;
    }
@@ -48,12 +55,17 @@ bool isEmpty()
    return playerHead == NULL;
 }
 
-int length()
+int length(int type)
 {
    int length = 0;
    struct player *current;
+   struct player *head;
 
-   for (current = playerHead; current != NULL; current = current->next)
+   if(type == FRUIT) head = fruitHead;
+   else if(type == BRICK) head= brickHead;
+   else head = playerHead;
+
+   for (current = head; current != NULL; current = current->next)
    {
       length++;
    }
@@ -247,27 +259,33 @@ struct player *findPlayerPos(int x, int y, int type){
       {
          return current;
       }
-  
+
       //go to next link
       current = current->next;
-   
+
    }
 
    //if data found, return the current Link
    return NULL;
 }
 
-void AddFruitHead(int x, int y){
-    struct fruits* node;
-    node = (struct fruits*)malloc(sizeof(struct fruits));
+void AddPosHead(int x, int y, int type){
+    struct pos_list* node;
+    node = (struct pos_list*)malloc(sizeof(struct pos_list));
     node->x = x;
     node->y = y;
-    node->next = fruitHead;
-    fruitHead = node;
+    if(type == BRICK){
+        node->next = brickHead;
+        brickHead = node;
+    }
+    else if(type == FRUIT){
+        node->next = fruitHead;
+        fruitHead = node;
+    }
 }
 
-void FreeFruitList(){
-    struct fruits *tmp;
+void freePosList(){
+    struct pos_list *tmp;
 
     while(fruitHead != NULL)
     {
@@ -275,12 +293,19 @@ void FreeFruitList(){
       fruitHead = fruitHead->next;
       free(tmp);
     }
+
+    while(brickHead != NULL)
+    {
+      tmp = brickHead;
+      brickHead = brickHead->next;
+      free(tmp);
+    }
 }
 
 void RemoveFruitPosition(int x, int y){
   //start from the first link
-  struct fruits *current = fruitHead;
-  struct fruits *previous = NULL;
+  struct pos_list *current = fruitHead;
+  struct pos_list *previous = NULL;
 
   //if list is empty
   if (fruitHead == NULL)
@@ -321,7 +346,7 @@ void RemoveFruitPosition(int x, int y){
 }
 
 void RemoveFruitHead(){
-    struct fruits *tempLink = fruitHead;
+    struct pos_list *tempLink = fruitHead;
     if(fruitHead->next != NULL)
     {
       fruitHead = fruitHead->next;

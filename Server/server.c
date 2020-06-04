@@ -4,7 +4,7 @@
 #include "comm.h"
 
 
-int server_fd; 
+int server_fd;
 int board_x;
 int board_y;
 int empty_blocks;
@@ -13,15 +13,16 @@ int num_fruits = 0;
 int num_players = 0;
 int **board;
 int done = 0;
+
 Uint32 Event_MovePacman = 0;
 Uint32 Event_MoveMonster = 1;
 
 #define MAX_PLAYERS (int)floor((board_x*board_y - num_bricks + 2)/4)
 
 int main(int argc, char* argv[]){
-	
+
 	SDL_Event event;
-	struct sockaddr_in local_addr;	
+	struct sockaddr_in local_addr;
 
 	if(argc != 2){
 		printf("error: wrong arguments\n");
@@ -38,8 +39,8 @@ int main(int argc, char* argv[]){
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58000);
-	int err = bind(server_fd, (struct sockaddr *)&local_addr, 
+	local_addr.sin_port = htons(58001);
+	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 						sizeof(local_addr));
 	if(err == -1){
 		perror("bind: ");
@@ -57,15 +58,15 @@ int main(int argc, char* argv[]){
 
 	//accepts new player connections
 	pthread_create(&thread_id, NULL, threadAccept, NULL);
-	
+
 	int x_new, y_new, x, y;
-	struct player *player1, *player2; 
+	struct player *player1, *player2;
 	struct position *new_position;
 
 	while (!done){
 		SDL_Delay(20);
 		while (SDL_PollEvent(&event)) {
-			
+
 			ManageFruits();
 			if(event.type == SDL_QUIT) {
 				done = SDL_TRUE;
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]){
 			if(event.type == Event_MovePacman || event.type == Event_MoveMonster){
 				player1 = event.user.data1;
 				new_position = event.user.data2;
-				
+
 				if(event.type == Event_MoveMonster){
 					x = player1->monster->x;
 					y = player1->monster->y;
@@ -83,11 +84,9 @@ int main(int argc, char* argv[]){
 					y = player1->pacman->y;
 				}
 
-				board[x][y] = EMPTY;
-				clear_place(x, y);
-
 				x_new = new_position->x;
 				y_new = new_position->y;
+				
 
 				if(event.type == Event_MoveMonster){
 					player2 = findPlayerPos(x_new, y_new, MONSTER);
@@ -96,19 +95,28 @@ int main(int argc, char* argv[]){
 					// Test for bricks and out of bound
 					bounceBounds(x,y,&x_new,&y_new);
 					checkRulesMonster(player1, player2, x_new,y_new);
+					broadcast_update(x_new, y_new, x, y, MONSTER);			
 				}
 				else{
+					
 					player2 = findPlayerPos(x_new, y_new, PACMAN);
 					printf("x: %d y: %d\n", x_new, y_new);
 
 					// Test for bricks and out of bound
 					bounceBounds(x,y,&x_new,&y_new);
-
-					if(board[x][y] == PACMAN)
+					if(board[x][y] == PACMAN){
 						checkRulesPacman(player1, player2, x_new,y_new);
-					else
+						broadcast_update(x_new, y_new, x, y, PACMAN);
+					}
+						
+					else if(board[x][y] == SUPERPACMAN){
 						checkRulesSuperPacman(player1, player2, x_new,y_new);
-				}	
+						broadcast_update(x_new, y_new, x, y, SUPERPACMAN);
+					}
+						
+
+					
+				}
 			}
 		}
 	}
@@ -116,6 +124,7 @@ int main(int argc, char* argv[]){
 	free(board[0]);
     free(board);
 	freeList();
+	freePosList();
 
 	printf("fim\n");
 	close_board_windows();
@@ -145,7 +154,7 @@ void * threadAccept(void *arg){
 			perror("accept ");
 			exit(EXIT_FAILURE);
 		}
-		
+
 		if(num_players > MAX_PLAYERS){
 			printf("Maximum number of players achived\n");
 			close(new_fd);
@@ -176,10 +185,15 @@ void * threadAccept(void *arg){
 		printf("Player %d entered the game\n", num_players);
 		// send board dimensions to new client
 		err = send_board(board_x, board_y, new_player->sock_fd);
+		sleep(1);
 		if(err == -1) exit(EXIT_FAILURE);
 
 		// send new positions to new client
 		err = send_position(pacman, monster, new_player->sock_fd);
+		sleep(1);
+		if(err == -1) exit(EXIT_FAILURE);
+
+		err = send_setup(new_player->sock_fd);
 		if(err == -1) exit(EXIT_FAILURE);
 
 		num_players ++;
@@ -194,7 +208,7 @@ void * threadClient(void *arg){
 	int *player_fd = (int*) arg;
 	int err, character;
 	SDL_Event new_event;
-	
+
 	while(!done){
 		SDL_zero(new_event);
 
@@ -202,7 +216,7 @@ void * threadClient(void *arg){
 		if(err == -1){
 			close(*player_fd);
 			return (NULL);
-		} 
+		}
 		if(character == MONSTER) new_event.type = Event_MoveMonster;
 		if(character == PACMAN) new_event.type = Event_MovePacman;
 
@@ -258,9 +272,10 @@ int ** loadBoard(char* arg){
         {
           // If there is a brick, store in board
           if(line[j] == 'B'){
-			board[i][j] = 1;
-			paint_brick(i, j);
-		  }
+						board[i][j] = 1;
+						paint_brick(i, j);
+						AddPosHead(i,j,BRICK);
+		  		}
         }
         // i is the index of current line
         i++;
@@ -298,7 +313,7 @@ void ManageFruits(){
 	do {
 		int x,y;
 		RandomPositionRules(&x,&y);
-		AddFruitHead(x,y);
+		AddPosHead(x,y,FRUIT);
 
 		int fruit = rand() % (CHERRY + 1 - LEMON) + LEMON;
 		num_fruits++;
@@ -468,6 +483,7 @@ void checkRulesMonster(struct player* dealer, struct player* receiver, int x_new
 }
 
 void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new, int y_new){
+	printf("I do print? %d %d\n", x_new, y_new);
 	// Pacman moving to empty place
 	if(board[x_new][y_new] == EMPTY){
 		int old_x = dealer->pacman->x;
@@ -481,6 +497,7 @@ void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new,
 	}
 	// Pacman moving to monster
 	else if(board[x_new][y_new] == MONSTER){
+		printf("TestPM\n");
 		// Same person's monster
 		if(dealer->id == receiver->id){
 			// Save values in integers to avoid deffering many pointers
@@ -586,6 +603,7 @@ void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x
 	}
 	// Superpacman moving to monster
 	else if(board[x_new][y_new] == MONSTER){
+		printf("TestSPM\n");
 		// Same person's monster
 		if(dealer->id == receiver->id){
 			// Save values in integers to avoid deffering many pointers
@@ -641,7 +659,7 @@ void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x
 			receiver->monster->y = old_y1;
 			paint_monster(old_x1, old_y1, receiver->p_color->r,receiver->p_color->g,receiver->p_color->b);
 		}
-		
+
 
 	}
 	// Superpacman moving to another superpacman

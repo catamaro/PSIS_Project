@@ -11,7 +11,7 @@ struct player *findPlayerPos(int x, int y, int type);
 
 void deletePlayer(int player_id);
 
-player * insertPlayer(struct position *pos1, struct position *pos2, 
+player * insertPlayer(struct position *pos1, struct position *pos2,
                         struct color *p_color, int player_id, int fd);
 bool isEmpty();
 
@@ -19,11 +19,13 @@ int length();
 
 player * getPlayerList();
 
-fruits *getFruitList();
+pos_list *getFruitList();
 
-void AddFruitHead(int x, int y);
+pos_list *getBrickList();
 
-void FreeFruitList();
+void AddPosHead(int x, int y, int type);
+
+void freePosList();
 
 void RemoveFruitPosition(int x, int y);
 
