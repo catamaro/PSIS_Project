@@ -64,8 +64,9 @@ int send_color(int sock_fd, struct color *new_color){
 
 	// send player color to server
 	err = write(sock_fd, new_color, sizeof(*new_color)); 
-	if(err == -1){
+	if(err <= 0){
 		perror("write: ");
+		close(sock_fd);
 		return -1;
 	}
 	printf("\nclt snd color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
@@ -110,8 +111,9 @@ int send_event(int type, int new_x, int new_y, int direction, struct player *my_
 		}
 		
 		err = write(my_player->sock_fd, message, strlen(message)); 
-		if(err == -1){
+		if(err <= 0){
 			perror("write: ");
+			close(my_player->sock_fd);
 			return -1;
 		} 
 		printf("clt snd pos_update: %s %d\n", message, PACMAN);
@@ -125,8 +127,9 @@ int send_event(int type, int new_x, int new_y, int direction, struct player *my_
 		}
 		
 		err = write(my_player->sock_fd, message, strlen(message)); 
-		if(err == -1){
+		if(err <= 0){
 			perror("write: ");
+			close(my_player->sock_fd);
 			return -1;
 		} 
 		printf("clt snd pos_update: %s %d\n", message, MONSTER);

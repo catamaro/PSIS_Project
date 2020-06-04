@@ -14,8 +14,8 @@ int num_players = 0;
 int **board;
 int done = 0;
 
-Uint32 Event_MovePacman = 0;
-Uint32 Event_MoveMonster = 1;
+unsigned int Event_MovePacman = 0;
+unsigned int Event_MoveMonster = 1;
 
 #define MAX_PLAYERS (int)floor((board_x*board_y - num_bricks + 2)/4)
 
@@ -185,7 +185,7 @@ void * threadAccept(void *arg){
 
 		printf("Player %d entered the game\n", num_players);
 		// send board dimensions to new client
-		err = send_board(board_x, board_y, new_player->sock_fd);
+		err = send_board_dim(board_x, board_y, new_player->sock_fd);
 		sleep(1);
 		if(err == -1) exit(EXIT_FAILURE);
 
@@ -194,7 +194,7 @@ void * threadAccept(void *arg){
 		sleep(1);
 		if(err == -1) exit(EXIT_FAILURE);
 
-		err = send_setup(new_player->sock_fd);
+		err = send_board_setup(new_player->sock_fd);
 		if(err == -1) exit(EXIT_FAILURE);
 
 		num_players ++;

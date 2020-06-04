@@ -3,7 +3,7 @@
 #include "comm.h"
 #include "list_handler.h"
 
-int send_board(int x, int y, int sock_fd){
+int send_board_dim(int x, int y, int sock_fd){
     char message[50];
     int err;
 
@@ -16,8 +16,9 @@ int send_board(int x, int y, int sock_fd){
 	}
 
    	err = write(sock_fd, message, strlen(message)); 
-	if(err == -1){
+	if(err <= 0){
 		perror("write: ");
+		close(sock_fd);
 		return -1;
 	}
 
@@ -26,7 +27,7 @@ int send_board(int x, int y, int sock_fd){
     return 0;
 }
 
-int send_setup(int sock_fd){
+int send_board_setup(int sock_fd){
 	struct pos_list *head = getBrickList();
 	struct pos_list *current = head;
 	struct player *headPlayer = getPlayerList();
@@ -69,8 +70,9 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y){
 	message->y = y;
 
 	err = write(sock_fd, message, sizeof(*message)); 
-	if(err == -1){
-		perror("write");
+	if(err <= 0){
+		perror("write: ");
+		close(sock_fd);
 		return -1;
 	}
 	return 0;
@@ -89,8 +91,9 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 	}
 
    	err = write(sock_fd, message, strlen(message)); 
-	if(err == -1){
+	if(err <= 0){
 		perror("write: ");
+		close(sock_fd);
 		return -1;
 	}
 
