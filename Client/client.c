@@ -108,7 +108,13 @@ int main(int argc, char* argv[]){
 	}
 	
 	printf("fim\n");
+
 	close(my_player->sock_fd);
+	free(my_player->monster);
+	free(my_player->pacman);
+	free(my_player->rgb);
+	free(my_player);
+
 	close_board_windows();
 	return EXIT_SUCCESS;
 }
@@ -122,7 +128,6 @@ void * threadReceive(void *arg){
 	struct color *rgb = malloc(sizeof(color));
 	int new_x, new_y, character;
 	int board_x, board_y;
-
 
 	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
 	if (err == -1) exit(EXIT_FAILURE);
@@ -141,7 +146,7 @@ void * threadReceive(void *arg){
 			}
 			if(message1->character == -1){
 				count++;
-				printf("final message no more bricks and fruits\n");
+				free(message1);
 				continue;
 			}
 			character = message1->character;
@@ -158,7 +163,8 @@ void * threadReceive(void *arg){
 			}
 			if(message2->character == -1){
 				count++;
-				printf("final message no more characters\n");
+				printf("board load completed\n");
+				free(message2);
 				continue;
 			}
 			character = message2->character;
@@ -176,6 +182,7 @@ void * threadReceive(void *arg){
 				close(my_player->sock_fd);
 				exit(EXIT_FAILURE);
 			}
+			//validate_msg();
 
 			clear_place(message->x, message->y);
 			character = message->character;
@@ -216,6 +223,9 @@ void * threadReceive(void *arg){
 				
     	printf("received %d byte %d %d %d\n", err,character,new_x,new_y);
 	}
+
+	free(message);
+	free(rgb);
 
 	return (NULL);
 }

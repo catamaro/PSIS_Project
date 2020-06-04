@@ -167,16 +167,14 @@ int rcv_color(int sock_fd, color *new_color){
 
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	int err;
-	char message[50];
 	int new_x, new_y, dir;
 	struct player *list;
 	struct position *new_position = malloc(sizeof(struct position));
-
-	memset(message, 0, 50*sizeof(char)); 
+	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 
 	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
 
-	err = recv(sock_fd, message , sizeof(message), 0);
+	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
 		perror("receive ");
 		close(sock_fd);
@@ -191,60 +189,41 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 		list = list->next;
 	}
 
-	if(sscanf(message, "%d", type) == 1){
-		if(*type == PACMAN){
-			if(sscanf(message, "%d %d %d", type, &new_x, &new_y) == 3){
+	if(message->character == PACMAN){
+		*type = PACMAN;
 
-				printf("svr rcv event: %s\n", message);
+		printf("svr rcv event: %d %d %d\n", message->character, message->x, message->y);
 
-				// store new position in motion 
-				new_position->x = new_x;
-				new_position->y = new_y;
-				// store previous position in user data
-				new_event->user.data1 = list;
-				new_event->user.data2 = new_position;
-			}
-			else{
-				printf("error: invalid message\n");
-				return -1;
-			}
-		}
-		else if(*type == MONSTER){
-			if(sscanf(message, "%d %d", type, &dir) == 2){
-				printf("\nsvr rcv event: %s\n", message);
-
-				new_x = list->monster->x;
-				new_y = list->monster->y;
-				
-				switch (dir)
-				{
-					case LEFT:  new_x--; break;
-					case RIGHT: new_x++; break;
-					case UP: 	new_y--; break;
-					case DOWN: 	new_y++; break;
-				}
-				new_position->x = new_x;
-				new_position->y = new_y;
-
-				// store previous position in user data
-				new_event->user.data1 = list;
-				new_event->user.data2 = new_position;
-			}
-			else{
-				printf("error: invalid message\n");
-				return -1;
-			}
-		}
-		else{
-			printf("error: invalid message\n");
-			return -1;
-		}
+		// store new position in motion 
+		new_position->x = message->x;
+		new_position->y = message->y;
+		// store previous position in user data
+		new_event->user.data1 = list;
+		new_event->user.data2 = new_position;
 	}
-	else{
-		printf("error: invalid message\n");
-		return -1;
+	else if(message->character == MONSTER){
+		*type = MONSTER;
+		
+		printf("svr rcv event: %d %d\n", message->character, message->x);
+
+		new_x = list->monster->x;
+		new_y = list->monster->y;
+		dir = message->x;
+		
+		switch (dir)
+		{
+			case LEFT:  new_x--; break;
+			case RIGHT: new_x++; break;
+			case UP: 	new_y--; break;
+			case DOWN: 	new_y++; break;
+		}
+		new_position->x = new_x;
+		new_position->y = new_y;
+
+		// store previous position in user data
+		new_event->user.data1 = list;
+		new_event->user.data2 = new_position;
 	}
-	
 
 	return 0;
 }
@@ -290,6 +269,7 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
+
 	return 0;
 }
 

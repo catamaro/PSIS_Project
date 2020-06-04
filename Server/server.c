@@ -20,7 +20,8 @@ unsigned int Event_MoveMonster = 1;
 
 int main(int argc, char *argv[])
 {
-
+	
+	srand(time(NULL));
 	SDL_Event event;
 	struct sockaddr_in local_addr;
 
@@ -105,6 +106,8 @@ int main(int argc, char *argv[])
 				if (event.type == Event_MoveMonster)
 				{
 					player2 = findPlayerPos(x_new, y_new, MONSTER);
+					if(player2 == NULL)
+						player2 = findPlayerPos(x_new, y_new, PACMAN);
 
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
@@ -122,9 +125,11 @@ int main(int argc, char *argv[])
 				else
 				{
 					player2 = findPlayerPos(x_new, y_new, PACMAN);
-
+					if(player2 == NULL)
+						player2 = findPlayerPos(x_new, y_new, MONSTER);
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
+
 					if (board[x][y] == PACMAN)
 					{
 						x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
