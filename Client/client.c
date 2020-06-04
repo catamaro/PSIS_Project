@@ -164,9 +164,6 @@ void * threadReceive(void *arg){
 			character = message2->character;
 			new_x = message2->x;
 			new_y = message2->y;
-			printf("%d\n", message2->r);
-			printf("%d\n", message2->g);
-			printf("%d\n", message2->b);
 			rgb->r = message2->r;
 			rgb->g = message2->g;
 			rgb->b = message2->b;
@@ -183,7 +180,7 @@ void * threadReceive(void *arg){
 			clear_place(message->x, message->y);
 			character = message->character;
 			new_x = message->new_x;
-			new_y = message->new_x;
+			new_y = message->new_y;
 			rgb->r = message->r;
 			rgb->g = message->g;
 			rgb->b = message->b;

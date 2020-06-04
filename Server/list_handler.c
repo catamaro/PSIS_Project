@@ -82,7 +82,7 @@ int length(int type)
    return length;
 }
 //find a link with given player
-struct player *findPlayer(int player)
+struct player *findPlayer(int sock_fd)
 {
    //start from the first link
    struct player *current = playerHead;
@@ -94,7 +94,7 @@ struct player *findPlayer(int player)
    }
 
    //navigate through list
-   while (current->id != player)
+   while (current->sock_fd != sock_fd)
    {
 
       //if it is last player
@@ -256,6 +256,7 @@ struct player *findPlayerPos(int x, int y, int type){
    //if list is empty
    if (playerHead == NULL)
    {
+      printf("error: empty list\n");
       return NULL;
    }
 
@@ -271,13 +272,12 @@ struct player *findPlayerPos(int x, int y, int type){
       {
          return current;
       }
-
       //go to next link
       current = current->next;
 
    }
 
-   //if data found, return the current Link
+   //if data found, return NULL
    return NULL;
 }
 

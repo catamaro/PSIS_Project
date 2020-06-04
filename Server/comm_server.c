@@ -272,9 +272,17 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 	message->new_y = new_y;
 	message->x = x;
 	message->y = y;
-	message->r = rgb->r;
-	message->g = rgb->g;
-	message->b = rgb->b;
+	if(rgb != NULL){
+		message->r = rgb->r;
+		message->g = rgb->g;
+		message->b = rgb->b;
+	}
+	else{
+		message->r = -1;
+		message->g = -1;
+		message->b = -1;
+	}
+	
 
 	err = write(sock_fd, message, sizeof(*message)); 
 	if(err <= 0){

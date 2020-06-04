@@ -63,7 +63,9 @@ int main(int argc, char *argv[])
 	//accepts new player connections
 	pthread_create(&thread_id, NULL, threadAccept, NULL);
 
-	int x_new, y_new, x, y, x_new_2, y_new_2;
+	int x_new, y_new, x, y;
+	int x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
+	int x_old1 = -1, x_old2 = -1, y_old1 = -1, y_old2 = -1;
 	struct player *player1, *player2;
 	struct position *new_position;
 
@@ -103,32 +105,52 @@ int main(int argc, char *argv[])
 				if (event.type == Event_MoveMonster)
 				{
 					player2 = findPlayerPos(x_new, y_new, MONSTER);
-					printf("x: %d y: %d\n", x_new, y_new);
 
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
-					checkRulesMonster(player1, player2, &x_new, &y_new, &x_new_2, &y_new_2);
-					broadcast_update(x_new, y_new, x, y, MONSTER, player1->rgb);
-					if(x_new_2 != -1) broadcast_update(x_new, y_new, x, y, MONSTER, player2->rgb);
+					x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
+                    x_old1 = -1, x_old2 = -1, y_old1 = -1, y_old2 = -1;
+					checkRulesMonster(player1, player2, x_new,y_new, &x_new1, &y_new1, &x_new2, &y_new2,
+                                                        &x_old1, &y_old1, &x_old2, &y_old2);
+					broadcast_update(x_new1, y_new1, x_old1, y_old1, board[x_new1][y_new1], player1->rgb);
+
+					if(x_new2 != -1){
+							if(player2 != NULL)broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], player2->rgb);
+							else broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], NULL);
+						} 
 				}
 				else
 				{
-
 					player2 = findPlayerPos(x_new, y_new, PACMAN);
-					printf("x: %d y: %d\n", x_new, y_new);
 
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
 					if (board[x][y] == PACMAN)
 					{
-						checkRulesPacman(player1, player2,&x_new, &y_new, &x_new_2, &y_new_2);
-						broadcast_update(x_new, y_new, x, y, PACMAN, player1->rgb);
+						x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
+                    	x_old1 = -1, x_old2 = -1, y_old1 = -1, y_old2 = -1;
+						checkRulesPacman(player1, player2, x_new,y_new, &x_new1, &y_new1, &x_new2, &y_new2,
+                                                        &x_old1, &y_old1, &x_old2, &y_old2);
+						broadcast_update(x_new1, y_new1, x_old1, y_old1, board[x_new1][y_new1], player1->rgb);
+
+						if(x_new2 != -1){
+							if(player2 != NULL)broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], player2->rgb);
+							else broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], NULL);
+						}
 					}
 
 					else if (board[x][y] == SUPERPACMAN)
 					{
-						checkRulesSuperPacman(player1, player2, &x_new, &y_new, &x_new_2, &y_new_2);
-						broadcast_update(x_new, y_new, x, y, SUPERPACMAN, player1->rgb);
+						x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
+                    	x_old1 = -1, x_old2 = -1, y_old1 = -1, y_old2 = -1;
+						checkRulesSuperPacman(player1, player2, x_new,y_new, &x_new1, &y_new1, &x_new2, &y_new2,
+                                                        &x_old1, &y_old1, &x_old2, &y_old2);
+						broadcast_update(x_new1, y_new1, x_old1, y_old1, board[x_new1][y_new1], player1->rgb);
+
+						if(x_new2 != -1){
+							if(player2 != NULL)broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], player2->rgb);
+							else broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], NULL);
+						} 
 						
 					}
 				}
@@ -232,6 +254,7 @@ void *threadClient(void *arg)
 		err = rcv_event(*player_fd, &new_event, &character);
 		if (err == -1)
 		{
+			clientDisconnect(player_fd);
 			close(*player_fd);
 			return (NULL);
 		}
@@ -242,6 +265,31 @@ void *threadClient(void *arg)
 
 		SDL_PushEvent(&new_event);
 	}
+
+	return (NULL);
+}
+
+void *clientDisconnect(int *sock_fd){
+	int x, y;
+	struct player *remove_player = findPlayer(*sock_fd);
+
+	x = remove_player->monster->x;
+	y = remove_player->monster->y;
+
+	board[x][y] = EMPTY;
+	clear_place(x,y);
+	broadcast_update(x, y, x, y, board[x][y], NULL);
+
+	x = remove_player->pacman->x;
+	y = remove_player->pacman->y;
+
+	board[x][y] = EMPTY;
+	clear_place(x,y);
+	broadcast_update(x, y, x, y, board[x][y], NULL);
+
+	deletePlayer(remove_player->id);
+
+	pthread_cancel(remove_player->thread_id);
 
 	return (NULL);
 }
@@ -360,26 +408,27 @@ void ManageFruits()
 	} while (num_fruits < (num_players - 1) * 2);
 }
 
-void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_new, 
-						int *y_new, int *x_new_2, int *y_new_2)
-{
-	// Monster moving to empty place
-	if (board[*x_new][*y_new] == EMPTY)
-	{
+void checkRulesMonster(struct player* dealer, struct player* receiver, int x_new, int y_new,
+						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
+							int* x_old1, int* y_old1, int* x_old2, int* y_old2){	// Monster moving to empty place
+	if(board[x_new][y_new] == EMPTY){
 		int old_x = dealer->monster->x;
 		int old_y = dealer->monster->y;
+		*x_old1 = old_x;
+		*y_old1 = old_y;
 		board[old_x][old_y] = EMPTY;
 		clear_place(old_x, old_y);
-		dealer->monster->x = *x_new;
-		dealer->monster->y = *y_new;
-		board[*x_new][*y_new] = MONSTER;
-		paint_monster(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		dealer->monster->x = x_new;
+		dealer->monster->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
+		board[x_new][y_new] = MONSTER;
+		paint_monster(x_new, y_new , dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
 	}
 	// Monster moving to pacman
-	else if (board[*x_new][*y_new] == PACMAN)
-	{
+	else if(board[x_new][y_new] == PACMAN){
 		// Same person's pacman
-		if (dealer->id == receiver->id)
+		if(dealer->id == receiver->id)
 		{
 			// Save values in integers to avoid deffering many pointers
 			int old_x1 = receiver->pacman->x;
@@ -387,8 +436,13 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_ne
 			int old_x2 = dealer->monster->x;
 			int old_y2 = dealer->monster->y;
 
-			clear_place(old_x1, old_y1);
-			clear_place(old_x2, old_y2);
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
+
+			clear_place(old_x1,old_y1);
+			clear_place(old_x2,old_y2);
 
 			// Put monster in pacman's block
 			dealer->monster->x = old_x1;
@@ -398,9 +452,12 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_ne
 			receiver->pacman->y = old_y2;
 			board[old_x2][old_y2] = PACMAN;
 			board[old_x1][old_y1] = MONSTER;
-
-			paint_pacman(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-			paint_monster(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			*x_new1 = old_x1;
+			*y_new1 = old_y1;
+			*x_new2 = old_x2;
+			*y_new2 = old_y2;
+			paint_pacman(old_x2, old_y2 , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+			paint_monster(old_x1, old_y1, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
 		// Another person's pacman
 		else
@@ -410,38 +467,48 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_ne
 			int old_y1 = receiver->pacman->y;
 			int old_x2 = dealer->monster->x;
 			int old_y2 = dealer->monster->y;
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
 			// Clean old pacman space
 			board[old_x2][old_y2] = EMPTY;
 			clear_place(old_x2, old_y2);
 			// Save new monster coordinates, increment score and paint
 			dealer->monster->x = old_x1;
 			dealer->monster->y = old_y1;
+			*x_new1 = old_x1;
+			*y_new1 = old_y1;
 			dealer->score = dealer->score + 1;
 			board[old_x1][old_y1] = MONSTER;
-			paint_monster(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			paint_monster(old_x1, old_y1, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 			// Fetch new pacman coordinates, save and paint
 			RandomPositionRules(&old_x1, &old_y1);
+			*x_new2 = old_x1;
+			*y_new2 = old_y1;
 			board[old_x1][old_y1] = PACMAN;
 			receiver->pacman->x = old_x1;
 			receiver->pacman->y = old_y1;
-			paint_pacman(old_x1, old_y1, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+			paint_pacman(old_x1, old_y1, receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 		}
 	}
 	// Monster moving to superpacman
-	else if (board[*x_new][*y_new] == SUPERPACMAN)
-	{
+	else if(board[x_new][y_new] == SUPERPACMAN){
 		// Same person's superpacman
-		if (dealer->id == receiver->id)
-		{
+		if(dealer->id == receiver->id){
 			// Save values in integers to avoid deffering many pointers
 			int old_x1 = receiver->pacman->x;
 			int old_y1 = receiver->pacman->y;
 			int old_x2 = dealer->monster->x;
 			int old_y2 = dealer->monster->y;
 
-			clear_place(old_x1, old_y1);
-			clear_place(old_x2, old_y2);
+			clear_place(old_x1,old_y1);
+			clear_place(old_x2,old_y2);
 
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
 			// Put monster in superpacman's block
 			dealer->monster->x = old_x1;
 			dealer->monster->y = old_y1;
@@ -449,30 +516,37 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_ne
 			receiver->pacman->x = old_x2;
 			receiver->pacman->y = old_y2;
 
+			*x_new1 = old_x1;
+			*y_new1 = old_y1;
+			*x_new2 = old_x2;
+			*y_new2 = old_y2;
+
 			board[old_x2][old_y2] = SUPERPACMAN;
 			board[old_x1][old_y1] = MONSTER;
 
-			paint_pacman(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-			paint_monster(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			paint_powerpacman(old_x2, old_y2 , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+			paint_monster(old_x1, old_y1, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
-
-		else
-		{
+		else{
 			// Another person's superpacman
 			int old_x1 = receiver->pacman->x;
 			int old_y1 = receiver->pacman->y;
 			int old_x2 = dealer->monster->x;
 			int old_y2 = dealer->monster->y;
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
 			// Increment score for superpacman
 			receiver->score = receiver->score + 1;
 			// Decrement number of times superpacman can eat
 			receiver->times = receiver->times - 1;
 			// If superpacman ate 2 monsters, go back to normal pacman
-			if (receiver->times < 1)
+			if(receiver->times < 1)
 			{
-				clear_place(old_x1, old_y1);
-				board[old_x1][old_y1] = PACMAN;
-				paint_pacman(old_x1, old_y1, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+					clear_place(old_x1, old_y1);
+					board[old_x1][old_y1] = PACMAN;
+					paint_powerpacman(old_x1,old_y1, receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 			}
 			// Clean old monster coordinates
 			board[old_x2][old_y2] = EMPTY;
@@ -482,74 +556,100 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int *x_ne
 			board[old_x2][old_y2] = MONSTER;
 			dealer->monster->x = old_x2;
 			dealer->monster->y = old_y2;
-			paint_monster(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			*x_new1 = old_x2;
+			*y_new1 = old_y2;
+			*x_new2 = old_x1;
+			*y_new2 = old_y1;
+			paint_monster(old_x2, old_y2, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
 	}
 	// Monster moving to another monster
-	else if (board[*x_new][*y_new] == MONSTER)
-	{
+	else if(board[x_new][y_new] == MONSTER){
 		int old_x1 = receiver->monster->x;
 		int old_y1 = receiver->monster->y;
 		int old_x2 = dealer->monster->x;
 		int old_y2 = dealer->monster->y;
-		clear_place(old_x1, old_y1);
-		clear_place(old_x2, old_y2);
+		clear_place(old_x1,old_y1);
+		clear_place(old_x2,old_y2);
+		*x_old1 = old_x2;
+    *y_old1 = old_y2;
+    *x_old2 = old_x1;
+    *y_old2 = old_y1;
 		// Swap monsters
 		dealer->monster->x = old_x1;
 		dealer->monster->y = old_y1;
 		receiver->monster->x = old_x2;
 		receiver->monster->y = old_y2;
-		paint_monster(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-		paint_monster(old_x2, old_y2, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+		*x_new1 = old_x1;
+		*y_new1 = old_y1;
+		*x_new2 = old_x2;
+		*y_new2 = old_y2;
+		paint_monster(old_x1,old_y1,dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+		paint_monster(old_x2,old_y2,receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 	}
 	// Monster moving to fruit
-	else if (board[*x_new][*y_new] == LEMON || board[*x_new][*y_new] == CHERRY)
-	{
+	else if(board[x_new][y_new] == LEMON || board[x_new][y_new] == CHERRY){
 		int old_x2 = dealer->monster->x;
 		int old_y2 = dealer->monster->y;
+		*x_old1 = old_x2;
+		*y_old1 = old_y2;
 		dealer->score = dealer->score + 1;
 		num_fruits--;
-		RemoveFruitPosition(*x_new, *y_new);
+		RemoveFruitPosition(x_new,y_new);
 		board[old_x2][old_y2] = EMPTY;
 		clear_place(old_x2, old_y2);
-		clear_place(*x_new, *y_new);
-		dealer->monster->x = *x_new;
-		dealer->monster->y = *y_new;
-		board[*x_new][*y_new] = MONSTER;
-		paint_monster(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		clear_place(x_new, y_new);
+		dealer->monster->x = x_new;
+		dealer->monster->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
+		board[x_new][y_new] = MONSTER;
+		paint_monster(x_new, y_new , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 	}
 }
 
-void checkRulesPacman(struct player *dealer, struct player *receiver, int *x_new, 
-						int *y_new, int *x_new_2, int *y_new_2)
-{
+void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new, int y_new,
+						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
+							int* x_old1, int* y_old1, int* x_old2, int* y_old2){
 	// Pacman moving to empty place
-	if (board[*x_new][*y_new] == EMPTY)
-	{
+	if(board[x_new][y_new] == EMPTY){
 		int old_x = dealer->pacman->x;
 		int old_y = dealer->pacman->y;
 		board[old_x][old_y] = EMPTY;
 		clear_place(old_x, old_y);
-		dealer->pacman->x = *x_new;
-		dealer->pacman->y = *y_new;
-		board[*x_new][*y_new] = PACMAN;
-		paint_pacman(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		*x_old1 = old_x;
+		*y_old1 = old_y;
+		dealer->pacman->x = x_new;
+		dealer->pacman->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
+		board[x_new][y_new] = PACMAN;
+		paint_pacman(x_new, y_new , dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		return;
+	}
+	if(receiver == NULL)
+	{
+		printf("Big error\n");
+		exit(-1);
 	}
 	// Pacman moving to monster
-	else if (board[*x_new][*y_new] == MONSTER)
-	{
+	else if(board[x_new][y_new] == MONSTER){
 		printf("TestPM\n");
 		// Same person's monster
-		if (dealer->id == receiver->id)
-		{
+		if(dealer->id == receiver->id){
 			// Save values in integers to avoid deffering many pointers
 			int old_x1 = receiver->monster->x;
 			int old_y1 = receiver->monster->y;
 			int old_x2 = dealer->pacman->x;
 			int old_y2 = dealer->pacman->y;
 
-			clear_place(old_x1, old_y1);
-			clear_place(old_x2, old_y2);
+			clear_place(old_x1,old_y1);
+			clear_place(old_x2,old_y2);
+
+			*x_old1 = old_x2;
+			*y_old1 = old_y2;
+			*x_old2 = old_x1;
+			*y_old2 = old_y1;
 
 			// Put pacman in monster's block
 			dealer->pacman->x = old_x1;
@@ -561,14 +661,22 @@ void checkRulesPacman(struct player *dealer, struct player *receiver, int *x_new
 			board[old_x2][old_y2] = MONSTER;
 			board[old_x1][old_y1] = PACMAN;
 
-			paint_monster(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-			paint_pacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			*x_new1 = old_x1;
+			*y_new1 = old_y1;
+			*x_new2 = old_x2;
+			*y_new2 = old_y2;
+
+			paint_monster(old_x2, old_y2 , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+			paint_pacman(old_x1, old_y1, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
 		// Another person's monster
-		else
-		{
+		else{
 			int old_x2 = dealer->pacman->x;
 			int old_y2 = dealer->pacman->y;
+
+			*x_old1 = old_x2;
+			*y_old1 = old_y2;
+
 			// Increment score for monster
 			receiver->score = receiver->score + 1;
 			// Clean old pacman coordinates
@@ -576,95 +684,120 @@ void checkRulesPacman(struct player *dealer, struct player *receiver, int *x_new
 			clear_place(old_x2, old_y2);
 			// New pacman coordinates
 			RandomPositionRules(&old_x2, &old_y2);
+			*x_new1 = old_x2;
+			*y_new1 = old_y2;
 			board[old_x2][old_y2] = PACMAN;
 			dealer->pacman->x = old_x2;
 			dealer->pacman->y = old_y2;
-			paint_pacman(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			paint_pacman(old_x2, old_y2, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
 	}
 	// Pacman moving to superpacman
-	else if (board[*x_new][*y_new] == SUPERPACMAN)
-	{
+	else if(board[x_new][y_new] == SUPERPACMAN){
 		int old_x1 = receiver->pacman->x;
 		int old_y1 = receiver->pacman->y;
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
-		clear_place(old_x1, old_y1);
-		clear_place(old_x2, old_y2);
+		clear_place(old_x1,old_y1);
+		clear_place(old_x2,old_y2);
+		*x_old1 = old_x2;
+		*y_old1 = old_y2;
+		*x_old2 = old_x1;
+		*y_old2 = old_y1;
 		// Swap pacman and superpacman
 		dealer->pacman->x = old_x1;
 		dealer->pacman->y = old_y1;
 		receiver->pacman->x = old_x2;
 		receiver->pacman->y = old_y2;
-		paint_pacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-		paint_powerpacman(old_x2, old_y2, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+		*x_new1 = old_x1;
+		*y_new1 = old_y1;
+		*x_new2 = old_x2;
+		*y_new2 = old_y2;
+		paint_pacman(old_x1,old_y1,dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+		paint_powerpacman(old_x2,old_y2,receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 	}
 	// Pacman moving to another pacman
-	else if (board[*x_new][*y_new] == PACMAN)
-	{
+	else if(board[x_new][y_new] == PACMAN){
 		int old_x1 = receiver->pacman->x;
 		int old_y1 = receiver->pacman->y;
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
-		clear_place(old_x1, old_y1);
-		clear_place(old_x2, old_y2);
+		clear_place(old_x1,old_y1);
+		clear_place(old_x2,old_y2);
+		*x_old1 = old_x2;
+		*y_old1 = old_y2;
+		*x_old2 = old_x1;
+		*y_old2 = old_y1;
 		// Swap pacmans
 		dealer->pacman->x = old_x1;
 		dealer->pacman->y = old_y1;
 		receiver->pacman->x = old_x2;
 		receiver->pacman->y = old_y2;
-		paint_pacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-		paint_pacman(old_x2, old_y2, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+		*x_new1 = old_x1;
+		*y_new1 = old_y1;
+		*x_new2 = old_x2;
+		*y_new2 = old_y2;
+		paint_pacman(old_x1,old_y1,dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+		paint_pacman(old_x2,old_y2,receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 	}
 	// Pacman moving to fruit
-	else if (board[*x_new][*y_new] == LEMON || board[*x_new][*y_new] == CHERRY)
-	{
+	else if(board[x_new][y_new] == LEMON || board[x_new][y_new] == CHERRY){
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
+		*x_old1 = old_x2;
+		*y_old1 = old_y2;
 		dealer->score = dealer->score + 1;
 		num_fruits--;
-		RemoveFruitPosition(*x_new, *y_new);
+		RemoveFruitPosition(x_new,y_new);
 		board[old_x2][old_y2] = EMPTY;
 		clear_place(old_x2, old_y2);
-		clear_place(*x_new, *y_new);
-		dealer->pacman->x = *x_new;
-		dealer->pacman->y = *y_new;
+		clear_place(x_new, y_new);
+		dealer->pacman->x = x_new;
+		dealer->pacman->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
 		dealer->times = 2;
-		board[*x_new][*y_new] = SUPERPACMAN;
-		paint_powerpacman(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		board[x_new][y_new] = SUPERPACMAN;
+		paint_powerpacman(x_new, y_new , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 	}
 }
 
-void checkRulesSuperPacman(struct player *dealer, struct player *receiver, int *x_new, 
-						int *y_new, int *x_new_2, int *y_new_2)
-{
+void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x_new, int y_new,
+						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
+							int* x_old1, int* y_old1, int* x_old2, int* y_old2){
 	// Superpacman moving to empty place
-	if (board[*x_new][*y_new] == EMPTY)
-	{
+	if(board[x_new][y_new] == EMPTY){
 		int old_x = dealer->pacman->x;
 		int old_y = dealer->pacman->y;
+		*x_old1 = old_x;
+		*y_old1 = old_y;
 		board[old_x][old_y] = EMPTY;
 		clear_place(old_x, old_y);
-		dealer->pacman->x = *x_new;
-		dealer->pacman->y = *y_new;
-		board[*x_new][*y_new] = SUPERPACMAN;
-		paint_powerpacman(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		dealer->pacman->x = x_new;
+		dealer->pacman->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
+		board[x_new][y_new] = SUPERPACMAN;
+		paint_powerpacman(x_new, y_new , dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
 	}
 	// Superpacman moving to monster
-	else if (board[*x_new][*y_new] == MONSTER)
-	{
+	else if(board[x_new][y_new] == MONSTER){
 		printf("TestSPM\n");
 		// Same person's monster
-		if (dealer->id == receiver->id)
-		{
+		if(dealer->id == receiver->id){
 			// Save values in integers to avoid deffering many pointers
 			int old_x1 = receiver->monster->x;
 			int old_y1 = receiver->monster->y;
 			int old_x2 = dealer->pacman->x;
 			int old_y2 = dealer->pacman->y;
 
-			clear_place(old_x1, old_y1);
-			clear_place(old_x2, old_y2);
+			clear_place(old_x1,old_y1);
+			clear_place(old_x2,old_y2);
+
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
 
 			// Put superpacman in monster's block
 			dealer->pacman->x = old_x1;
@@ -673,35 +806,41 @@ void checkRulesSuperPacman(struct player *dealer, struct player *receiver, int *
 			receiver->monster->x = old_x2;
 			receiver->monster->y = old_y2;
 
+			*x_new1 = old_x1;
+			*y_new1 = old_y1;
+			*x_new2 = old_x2;
+			*y_new2 = old_y2;
+
 			board[old_x2][old_y2] = MONSTER;
 			board[old_x1][old_y1] = SUPERPACMAN;
 
-			paint_monster(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-			paint_powerpacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			paint_monster(old_x2, old_y2 , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+			paint_powerpacman(old_x1, old_y1, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 		}
 		// Another person's monster
-		else
-		{
+		else{
 			int old_x1 = receiver->monster->x;
 			int old_y1 = receiver->monster->y;
 			int old_x2 = dealer->pacman->x;
 			int old_y2 = dealer->pacman->y;
+			*x_old1 = old_x2;
+      *y_old1 = old_y2;
+      *x_old2 = old_x1;
+      *y_old2 = old_y1;
 			// Increment score for superpacman
 			dealer->score = dealer->score + 1;
 			// Decrement number of times superpacman can eat
 			dealer->times = dealer->times - 1;
 			// If superpacman ate 2 monsters, go back to normal pacman
-			if (dealer->times < 1)
-			{
-				clear_place(old_x2, old_y2);
-				board[old_x2][old_y2] = PACMAN;
-				paint_pacman(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			if(dealer->times < 1){
+					clear_place(old_x2, old_y2);
+					board[old_x2][old_y2] = PACMAN;
+					paint_pacman(old_x2,old_y2, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 			}
-			else
-			{
-				clear_place(old_x2, old_y2);
-				board[old_x2][old_y2] = SUPERPACMAN;
-				paint_powerpacman(old_x2, old_y2, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+			else{
+					clear_place(old_x2,old_y2);
+					board[old_x2][old_y2] = SUPERPACMAN;
+					paint_powerpacman(old_x2,old_y2, dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 			}
 			// Clean old monster coordinates
 			board[old_x1][old_y1] = EMPTY;
@@ -711,58 +850,81 @@ void checkRulesSuperPacman(struct player *dealer, struct player *receiver, int *
 			board[old_x1][old_y1] = MONSTER;
 			receiver->monster->x = old_x1;
 			receiver->monster->y = old_y1;
-			paint_monster(old_x1, old_y1, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+			*x_new1 = old_x2;
+			*y_new1 = old_y2;
+			*x_new2 = old_x1;
+			*y_new2 = old_y1;
+			paint_monster(old_x1, old_y1, receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 		}
+
+
 	}
 	// Superpacman moving to another superpacman
-	else if (board[*x_new][*y_new] == SUPERPACMAN)
-	{
+	else if(board[x_new][y_new] == SUPERPACMAN){
 		int old_x1 = receiver->pacman->x;
 		int old_y1 = receiver->pacman->y;
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
-		clear_place(old_x1, old_y1);
-		clear_place(old_x2, old_y2);
+		clear_place(old_x1,old_y1);
+		clear_place(old_x2,old_y2);
+		*x_old1 = old_x2;
+    *y_old1 = old_y2;
+    *x_old2 = old_x1;
+    *y_old2 = old_y1;
 		// Swap pacmans
 		dealer->pacman->x = old_x1;
 		dealer->pacman->y = old_y1;
 		receiver->pacman->x = old_x2;
 		receiver->pacman->y = old_y2;
-		paint_powerpacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-		paint_powerpacman(old_x2, old_y2, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+		*x_new1 = old_x1;
+		*y_new1 = old_y1;
+		*x_new2 = old_x2;
+		*y_new2 = old_y2;
+		paint_powerpacman(old_x1,old_y1,dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+		paint_powerpacman(old_x2,old_y2,receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 	}
 	// Superpacman moving to a pacman
-	else if (board[*x_new][*y_new] == PACMAN)
-	{
+	else if(board[x_new][y_new] == PACMAN){
 		int old_x1 = receiver->pacman->x;
 		int old_y1 = receiver->pacman->y;
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
-		clear_place(old_x1, old_y1);
-		clear_place(old_x2, old_y2);
+		clear_place(old_x1,old_y1);
+		clear_place(old_x2,old_y2);
+		*x_old1 = old_x2;
+    *y_old1 = old_y2;
+    *x_old2 = old_x1;
+    *y_old2 = old_y1;
 		// Swap pacmans
 		dealer->pacman->x = old_x1;
 		dealer->pacman->y = old_y1;
 		receiver->pacman->x = old_x2;
 		receiver->pacman->y = old_y2;
-		paint_powerpacman(old_x1, old_y1, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
-		paint_pacman(old_x2, old_y2, receiver->rgb->r, receiver->rgb->g, receiver->rgb->b);
+		*x_new1 = old_x1;
+		*y_new1 = old_y1;
+		*x_new2 = old_x2;
+		*y_new2 = old_y2;
+		paint_powerpacman(old_x1,old_y1,dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
+		paint_pacman(old_x2,old_y2,receiver->rgb->r,receiver->rgb->g,receiver->rgb->b);
 	}
 	// Superpacman moving to fruit
-	else if (board[*x_new][*y_new] == LEMON || board[*x_new][*y_new] == CHERRY)
-	{
+	else if(board[x_new][y_new] == LEMON || board[x_new][y_new] == CHERRY){
 		int old_x2 = dealer->pacman->x;
 		int old_y2 = dealer->pacman->y;
+		*x_old1 = old_x2;
+		*y_old1 = old_y2;
 		dealer->score = dealer->score + 1;
 		num_fruits--;
-		RemoveFruitPosition(*x_new, *y_new);
+		RemoveFruitPosition(x_new,y_new);
 		board[old_x2][old_y2] = EMPTY;
 		clear_place(old_x2, old_y2);
-		clear_place(*x_new, *y_new);
-		dealer->pacman->x = *x_new;
-		dealer->pacman->y = *y_new;
-		board[*x_new][*y_new] = SUPERPACMAN;
-		paint_powerpacman(*x_new, *y_new, dealer->rgb->r, dealer->rgb->g, dealer->rgb->b);
+		clear_place(x_new, y_new);
+		dealer->pacman->x = x_new;
+		dealer->pacman->y = y_new;
+		*x_new1 = x_new;
+		*y_new1 = y_new;
+		board[x_new][y_new] = SUPERPACMAN;
+		paint_powerpacman(x_new, y_new , dealer->rgb->r,dealer->rgb->g,dealer->rgb->b);
 	}
 }
 
