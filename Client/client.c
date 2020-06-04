@@ -10,6 +10,7 @@ int main(int argc, char* argv[]){
 	char *IP;
 	int port;
 	int dir = -1;
+	int board_x, board_y;
 	struct sockaddr_in server_addr;
 	struct player *my_player = malloc(sizeof(struct player));
 	my_player->monster = malloc(sizeof(struct position));
@@ -21,7 +22,7 @@ int main(int argc, char* argv[]){
 		exit(EXIT_FAILURE);
 	}
 	else{
-		IP = (char*) malloc(strlen(argv[1]));
+		IP = (char*) malloc(strlen(argv[1])+1);
 		strcpy(IP, argv[1]);
 		if(sscanf(argv[2], "%d", &port) != 1){
 			printf("error: argv[2] is not a number\n");
@@ -66,13 +67,19 @@ int main(int argc, char* argv[]){
 	
 	//receive and send thread id
 	pthread_t receive_id;
-
-	//receives messages from server
-	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
-
+	
 	err = send_color(my_player->sock_fd, my_player->rgb);
 	if(err == -1) exit(EXIT_FAILURE);
 
+	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
+	if (err == -1) exit(EXIT_FAILURE);
+	printf("board x: %d board y: %d\n", board_x, board_y);
+	 
+	create_board_window(board_x, board_y);
+
+	//receives messages from server
+	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
+	
 	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
@@ -126,13 +133,6 @@ void * threadReceive(void *arg){
 	struct update_msg *message = malloc(sizeof(update_msg));
 	struct color *rgb = malloc(sizeof(color));
 	int new_x, new_y, character;
-	int board_x, board_y;
-
-	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
-	if (err == -1) exit(EXIT_FAILURE);
-	printf("board x: %d board y: %d\n", board_x, board_y);
-	 
-	create_board_window(board_x, board_y);
 
 	while(!done){
 		// receive board info type 1 fruits and bricks 
