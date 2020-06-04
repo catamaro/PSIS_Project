@@ -259,11 +259,11 @@ void *threadClient(void *arg)
 		SDL_zero(new_event);
 
 		err = rcv_event(*player_fd, &new_event, &character);
-		if (err == -1)
+		if (err <= 0)
 		{
 			clientDisconnect(player_fd);
 			close(*player_fd);
-			return (NULL);
+			return(NULL);
 		}
 		if (character == MONSTER)
 			new_event.type = Event_MoveMonster;
@@ -273,15 +273,20 @@ void *threadClient(void *arg)
 		SDL_PushEvent(&new_event);
 	}
 
-	return (NULL);
+	return(NULL);
+
 }
 
-void *clientDisconnect(int *sock_fd){
+void clientDisconnect(int *sock_fd){
 	int x, y;
 	struct player *remove_player = findPlayer(*sock_fd);
-
+	
 	x = remove_player->monster->x;
 	y = remove_player->monster->y;
+	
+	deletePlayer(remove_player->id);
+
+	num_players--;
 
 	board[x][y] = EMPTY;
 	clear_place(x,y);
@@ -294,11 +299,7 @@ void *clientDisconnect(int *sock_fd){
 	clear_place(x,y);
 	broadcast_update(x, y, x, y, board[x][y], NULL);
 
-	deletePlayer(remove_player->id);
-
 	pthread_cancel(remove_player->thread_id);
-
-	return (NULL);
 }
 
 int **loadBoard(char *arg)

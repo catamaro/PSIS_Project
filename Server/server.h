@@ -43,6 +43,6 @@ void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x
 						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
 							int* x_old1, int* y_old1, int* x_old2, int* y_old2);
 void ManageFruits();
-void *clientDisconnect(int *sock_fd);
+void clientDisconnect(int *sock_fd);
 
 #endif

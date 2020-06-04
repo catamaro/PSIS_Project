@@ -177,8 +177,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
 		perror("receive ");
-		close(sock_fd);
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	list = getPlayerList();
@@ -203,7 +202,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	}
 	else if(message->character == MONSTER){
 		*type = MONSTER;
-		
+
 		printf("svr rcv event: %d %d\n", message->character, message->x);
 
 		new_x = list->monster->x;
