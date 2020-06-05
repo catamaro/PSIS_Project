@@ -119,9 +119,6 @@ int main(int argc, char *argv[])
 				x_new = new_position->x;
 				y_new = new_position->y;
 
-				/*if (x == x_new && y == y_new){
-					continue;
-				}*/
 				if(event.type == Event_MoveMonster && player1->monster_tokens == 0){
 					printf("Test monster\n");
 					continue;
@@ -324,7 +321,6 @@ void *threadClient(void *arg)
 		if (character == MONSTER) new_event.type = Event_MoveMonster;
 		
 		if (character == PACMAN) new_event.type = Event_MovePacman;
-
 		SDL_PushEvent(&new_event);
 	}
 
@@ -339,14 +335,17 @@ void *threadClientTime(void *arg)
 	while (!done)
 	{
 		printf("\nINSIDE THREAD !\n");
+		sleep(0.5);
 
 		unsigned int current_time = SDL_GetTicks();
 		unsigned int delta_movement = current_time - movement_update_time;
 		unsigned int delta_inactivity = current_time - inactivity_update_time;
 
+		printf("\nTIME:%d !\n", delta_inactivity);
+
 		if (delta_inactivity >= 1000)
 		{
-			board = CheckInactivity(board, my_player);
+			board = CheckInactivity(board, my_player, num_players);
 			inactivity_update_time = current_time;
 		}
 		if(delta_movement >= 500){

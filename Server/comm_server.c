@@ -177,7 +177,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	struct position *new_position = malloc(sizeof(struct position));
 	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 
-	while(!run_thread2);
+	//while(!run_thread2);
 
 	pthread_mutex_lock(&run_rcv_event);
 
@@ -358,16 +358,17 @@ void destroy_insert_player_mutex(){
 	pthread_mutex_destroy(&run_insert_player);
 }
 
-int** CheckInactivity(int **board, struct player *my_player)
+int** CheckInactivity(int **board, struct player *my_player, int num_players)
 {
-	printf("AM I BEING KICKED?\n");
+	if(num_players == 1) return board;
+
 	pthread_mutex_trylock(&run_rcv_event);
 	run_thread2 = 1;
 
-	while(!run_thread);	
+	//while(!run_thread);	
 	printf("I AM NOT\n");
 	
-	if (my_player->inactive_time_pacman >= (1000 * 30))
+	if ((my_player->inactive_time_pacman) >= (1000 * 30))
 	{
 		// Pacman Inativo
 		int x, y, x_old, y_old;
@@ -396,7 +397,32 @@ int** CheckInactivity(int **board, struct player *my_player)
 	}
 	else
 	{
+		printf("time: %d\n", my_player->inactive_time_pacman);
 		my_player->inactive_time_pacman = my_player->inactive_time_pacman + 1000;
+	}
+
+	if ((my_player->inactive_time_monster) >= (1000 * 30))
+	{
+		// monster Inativo
+		int x, y, x_old, y_old;
+		RandomPositionRules(&x, &y);
+		x_old = my_player->monster->x;
+		y_old = my_player->monster->y;
+		board[x_old][y_old] = EMPTY;
+		clear_place(x_old, y_old);
+		my_player->monster->x = x;
+		my_player->monster->y = y;
+
+		board[x][y] = MONSTER;
+		paint_monster(x, y, my_player->rgb->r, my_player->rgb->g, my_player->rgb->b);
+		broadcast_update(x, y, x_old, y_old, MONSTER, my_player->rgb);
+
+		my_player->inactive_time_monster = 0;
+	}
+	else
+	{
+		printf("time: %d\n", my_player->inactive_time_monster);
+		my_player->inactive_time_monster = my_player->inactive_time_monster + 1000;
 	}
 
 	pthread_mutex_unlock(&run_rcv_event);
