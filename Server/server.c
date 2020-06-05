@@ -62,10 +62,15 @@ int main(int argc, char *argv[])
 	pthread_t thread_id;
 
 	//accepts new player connections
-	pthread_create(&thread_id, NULL, threadAccept, NULL);
+	err = pthread_create(&thread_id, NULL, threadAccept, NULL);
+	if(err != 0){
+		printf("error: could not create thread\n");
+		exit(EXIT_FAILURE);
+	}
 
 	init_insert_player_mutex();
 
+	// create sig action for ctrl+c
 	struct sigaction sa;
     sa.sa_handler = sigHandler;
     sa.sa_flags = 0;

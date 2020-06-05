@@ -325,9 +325,7 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	// creeate thread for new client
 	pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player);
-	printf("\nBEFORE CREATE !\n");
 	pthread_create(&(new_player->time_id), NULL, threadClientTime, (void *)new_player);
-	printf("\nAFTER CREATE !\n");
 	// send board dimensions to new client
 	err = send_board_dim(board_x, board_y, new_player->sock_fd);
 	if (err == -1)
@@ -345,7 +343,6 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
     //pthread_cond_signal(&run_cond);
 	//printf("I FREE MY SLAVES!\n");
 	pthread_mutex_unlock(&run_insert_player);
-	printf("I UNBLOCK MYSELF!\n");
 	run_thread = 1;
 
 }
