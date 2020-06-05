@@ -74,7 +74,6 @@ int main(int argc, char* argv[]){
 
 	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
 	if (err == -1) exit(EXIT_FAILURE);
-	printf("board x: %d board y: %d\n", board_x, board_y);
 	 
 	create_board_window(board_x, board_y);
 
@@ -91,8 +90,6 @@ int main(int argc, char* argv[]){
 			}
 			//when the mouse mooves the monster also moves
 			if(event.type == SDL_MOUSEMOTION){
-				x = 0, y = 0;
-
 				get_board_place(event.motion.x, event.motion.y, &x, &y);
 
 				if(x == last_x && y == last_y) continue;
@@ -150,7 +147,7 @@ void * threadReceive(void *arg){
 				close(my_player->sock_fd);
 				exit(EXIT_FAILURE);
 			}
-			printf("clt rcv init_msg %d byte %d %d %d\n", err, message2->character,message1->x,message1->y);
+			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->x,message1->y);
 			if(message1->character == -1){
 				board_load++;
 				free(message1);
@@ -176,7 +173,7 @@ void * threadReceive(void *arg){
 				free(message2);
 				continue;
 			}
-			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, character,message2->x,message2->y, message2->r,  
+			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, message2->character,message2->x,message2->y, message2->r,  
 					message2->g,  message2->b);
 
 			character = message2->character;
@@ -204,7 +201,7 @@ void * threadReceive(void *arg){
 			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, character,new_x,new_y, message->r,  
 					message->g,  message->b);
 
-			if(message->x > -1)
+			if(message->x != -1)
                 clear_place(message->x, message->y);
 			character = message->character;
 			new_x = message->new_x;

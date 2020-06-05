@@ -6,25 +6,20 @@
 pthread_mutex_t mutex_insert_player;
 
 int send_board_dim(int x, int y, int sock_fd){
-    char message[50];
+    struct position *board_dim = malloc(sizeof(struct position));
     int err;
 
-	memset(message, 0, 50*sizeof(char)); 
+	board_dim->x = x;
+	board_dim->y = y;
 
-    err = sprintf(message, "%d %d\n", x, y);
-	if(err == -1){
-		printf("error: cannot create message\n");
-		return -1;
-	}
-
-   	err = write(sock_fd, message, strlen(message)); 
+   	err = write(sock_fd, board_dim, sizeof(*board_dim)); 
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
 
-	printf("\nsvr snd board size: %s\n", message);
+	printf("\nsvr snd board size: %d %d\n", board_dim->x, board_dim->y);
 
     return 0;
 }
@@ -44,13 +39,13 @@ int send_board_setup(int sock_fd){
 
 	head = getFruitList();
 	current = head;
-	
+
 	for (current = head; current != NULL; current = current->next)
 	{
 		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
 	}
-	
+
 	// end of messages of type 1
 	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
 	if(err == -1) return -1;
@@ -65,10 +60,10 @@ int send_board_setup(int sock_fd){
 			err = send_init_msg(sock_fd, PACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
 		else
 			err = send_init_msg(sock_fd, SUPERPACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
-		
+
 		if(err == -1) return -1;
 	}
-	
+
 	// end of messages of type 2
 	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
 	if(err == -1) return -1;
@@ -87,14 +82,14 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		message->character = type;
 		message->x = x;
 		message->y = y;
-		
-		err = write(sock_fd, message, sizeof(*message)); 
+
+		err = write(sock_fd, message, sizeof(*message));
 		if(err <= 0){
 			perror("write: ");
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->x, message->y, 
+		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->x, message->y,
 					message->r, message->g, message->b);
 	}
 	else{
@@ -103,7 +98,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		message->x = x;
 		message->y = y;
 
-		err = write(sock_fd, message, sizeof(*message)); 
+		err = write(sock_fd, message, sizeof(*message));
 		if(err <= 0){
 			perror("write: ");
 			close(sock_fd);
@@ -112,7 +107,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		printf("\nsvr snd initial positions: %d %d\n", message->x, message->y);
 	}
 
-	
+
 	return 0;
 }
 
@@ -120,7 +115,7 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 	char message[50];
     int err;
 
-	memset(message, 0, 50*sizeof(char)); 
+	memset(message, 0, 50*sizeof(char));
 
     err = sprintf(message, "%d %d %d %d\n", pacman->x, pacman->y, monster->x, monster->y);
 	if(err == -1){
@@ -128,7 +123,7 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 		return -1;
 	}
 
-   	err = write(sock_fd, message, strlen(message)); 
+   	err = write(sock_fd, message, strlen(message));
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
@@ -143,16 +138,16 @@ int send_position(struct position *pacman, struct position *monster, int sock_fd
 int rcv_color(int sock_fd, color *new_color){
     int err;
 
-	err = recv(sock_fd, new_color , sizeof(*new_color), 0);	
+	err = recv(sock_fd, new_color , sizeof(*new_color), 0);
 	if(err <= 0){
 		perror("receive ");
 		close(sock_fd);
 		exit(EXIT_FAILURE);
-	} 
+	}
 
 	printf("\nsvr rcv color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
-	
-	return 0;	
+
+	return 0;
 }
 
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
@@ -183,7 +178,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 
 		printf("svr rcv event: %d %d %d\n", message->character, message->x, message->y);
 
-		// store new position in motion 
+		// store new position in motion
 		new_position->x = message->x;
 		new_position->y = message->y;
 		// store previous position in user data
@@ -198,7 +193,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 		new_x = list->monster->x;
 		new_y = list->monster->y;
 		dir = message->x;
-		
+
 		switch (dir)
 		{
 			case LEFT:  new_x--; break;
@@ -251,8 +246,8 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 		message->g = -1;
 		message->b = -1;
 	}
-	
-	err = write(sock_fd, message, sizeof(*message)); 
+
+	err = write(sock_fd, message, sizeof(*message));
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
@@ -266,44 +261,46 @@ int broadcast_score(int player_id, int score){
 	struct player *head = getPlayerList();
 	struct player *current = head;
 	int err;
-	
-	for (current = head; current != NULL; current = current->next)
-	{
-		err = send_score(current->sock_fd, player_id, score);
-		if(err == -1) return -1;
-	}
 
+	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
+		for (current = head; current != NULL; current = current->next)
+		{
+			printf("id: %d type:%d\n", player_id, score);
+			err = send_score(current->sock_fd, player_id, score);
+			if(err == -1) return -1;
+		}
+		pthread_mutex_unlock(&mutex_insert_player);
+	}
 	return 0;
 }
 
 int send_score(int sock_fd, int player_id, int score){
 	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 	int err;
-	
+
 	message->x = player_id;
 	message->y = score;
 	message->character = SCORE;
 	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
-		err = write(sock_fd, message, sizeof(*message)); 
+		err = write(sock_fd, message, sizeof(*message));
 		if(err <= 0){
 			perror("write: ");
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		pthread_mutex_unlock(&mutex_insert_player);	
+		pthread_mutex_unlock(&mutex_insert_player);
 	}
 
 	return 0;
 }
 
-void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
+void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster,
 					struct color *new_color, int *num_players, int new_fd){
 	struct player *new_player;
 
 	int err;
 
 	pthread_mutex_lock(&mutex_insert_player);
-
 	// add new player to player list
 	new_player = insertPlayer(pacman, monster, new_color, *num_players, new_fd);
 
@@ -320,7 +317,7 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 	if (err == -1)
 		exit(EXIT_FAILURE);
 
-	printf("\nPlayer %d entered the game\n", *num_players);	
+	printf("\nPlayer %d entered the game\n", *num_players);
 
 	pthread_mutex_unlock(&mutex_insert_player);
 }
@@ -332,7 +329,7 @@ void init_insert_player_mutex(){
 void destroy_insert_player_mutex(){
 	pthread_mutex_destroy(&mutex_insert_player);
 }
-	
+
 int** CheckInactivity(int **board)
 {
 	//start from the first link
@@ -343,7 +340,7 @@ int** CheckInactivity(int **board)
 
 	//navigate through list
 	while (current)
-	{		
+	{
 		if(pthread_mutex_trylock(&mutex_insert_player) == 0){
 			//if it is last player
 			if (current->next == NULL)
@@ -366,7 +363,7 @@ int** CheckInactivity(int **board)
 						board[x][y] = PACMAN;
 						paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
 						broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
-						
+
 					}
 					else
 					{
@@ -456,13 +453,14 @@ int** CheckInactivity(int **board)
 				}
 				current = current->next;
 			}
-		
+
 			pthread_mutex_unlock(&mutex_insert_player);
-			printf("I live the mutex!\n");
+			return board;
 		}
 		pthread_mutex_unlock(&mutex_insert_player);
-		printf("I live the mutex!\n");
+		return board;
 	}
+	pthread_mutex_unlock(&mutex_insert_player);
 
 	return board;
 }
@@ -486,11 +484,8 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 			(*board)[x][y] = 0;
 			(*num_fruits)--;
 			broadcast_update(x, y, x, y, (*board)[x][y], NULL);
-			
-		} while (*num_fruits > (*num_players - 1) * 2);
 
-		pthread_mutex_unlock(&mutex_insert_player);
-		printf("I live mutex\n");
+		} while (*num_fruits > (*num_players - 1) * 2);
 
 		return;
 	}
@@ -515,6 +510,5 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 		}
 		broadcast_update(x, y, x, y, (*board)[x][y], NULL);
 
-	} while (*num_fruits < (*num_players - 1) * 2);		
-
+	} while (*num_fruits < (*num_players - 1) * 2);
 }

@@ -3,28 +3,23 @@
 #include "comm.h"
 
 int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
-    int x, y, err;
-	char message[50];
+    int err;
+	struct position *board_dim = malloc(sizeof(struct position));
 
-	memset(message, 0, 50*sizeof(char)); 
-
-	err = recv(sock_fd, &message , sizeof(message), 0);
+	err = recv(sock_fd, board_dim, sizeof(*board_dim), 0);
 	if(err <= 0){
 		perror("receive ");
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
 
-    printf("\nclt rcv board size: %s\n", message);
-    if(sscanf(message, "%d %d", &x, &y) == 2){
-		*board_x = x;
-		*board_y = y;
-		return 0;
-    }
-    else{
-        printf("error: incorrect initial message");
-        return -1;
-    }
+    printf("\nclt rcv board size: %d %d\n", board_dim->x, board_dim->y);
+
+	*board_x = board_dim->x;
+	*board_y = board_dim->y;
+
+	return 0;
+
 }
 
 int send_color(int sock_fd, struct color *new_color){

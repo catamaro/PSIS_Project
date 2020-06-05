@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(5800);
+	local_addr.sin_port = htons(58001);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
@@ -116,12 +116,24 @@ int main(int argc, char *argv[])
 				x_new = new_position->x;
 				y_new = new_position->y;
 
-				if (x == x_new && y == y_new)
+				if (x == x_new && y == y_new){
 					continue;
+					if(event.type == Event_MoveMonster && player1->monster_tokens == 0){
+						printf("Test monster\n");
+						continue;
+					}
+				}
+				if(event.type == Event_MovePacman && player1->pacman_tokens == 0)
+				{
+					printf("Test pacman\n");
+					continue;
+				}
+					
 
 				if (event.type == Event_MoveMonster)
 				{
 					player1->inactive_time_monster = 0;
+					player1->monster_tokens = player1->monster_tokens - 1;
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
 
@@ -146,6 +158,7 @@ int main(int argc, char *argv[])
 				else
 				{
 					player1->inactive_time_pacman = 0;
+					player1->pacman_tokens = player1->pacman_tokens - 1;
 					// Test for bricks and out of bound
 					bounceBounds(x, y, &x_new, &y_new);
 
@@ -169,7 +182,6 @@ int main(int argc, char *argv[])
 								broadcast_update(x_new2, y_new2, x_old2, y_old2, board[x_new2][y_new2], NULL);
 						}
 					}
-
 					else if (board[x][y] == SUPERPACMAN)
 					{
 						x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
@@ -214,7 +226,7 @@ int main(int argc, char *argv[])
 			inactivity_update_time = current_time;
 		}
 		if(delta_movement >= 500){
-			// Iterate list and increment for all players
+			IncrementMovement();
 			movement_update_time = current_time;
         }
 	}
@@ -284,8 +296,6 @@ void *threadAccept(void *arg)
 
 		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
 						new_fd);
-
-		
 	}
 	
 
@@ -1162,11 +1172,13 @@ void PrintPlayerScore()
 		if (current->next == NULL)
 		{
 			printf("Player %d: %d points\n", current->id, current->score);
+			broadcast_score(current->id, current->score);
 			return;
 		}
 		else
 		{
 			printf("Player %d: %d points\n", current->id, current->score);
+			broadcast_score(current->id, current->score);
 			//go to next link
 			current = current->next;
 		}

@@ -46,5 +46,5 @@ void clientDisconnect(int *sock_fd);
 
 void PrintPlayerScore();
 void ResetScore();
-
+void IncrementMovement();
 #endif
