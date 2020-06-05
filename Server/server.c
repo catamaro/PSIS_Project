@@ -275,11 +275,8 @@ void *threadAccept(void *arg)
 		board[pacman->x][pacman->y] = PACMAN;
 		board[monster->x][monster->y] = MONSTER;
 
-		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, new_fd);
-
-		num_players++;
-
-		ManageFruits(&num_fruits, &num_players, &board);
+		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
+						new_fd, &num_fruits, &board);
 	}
 
 	return (NULL);
@@ -606,7 +603,7 @@ void checkRulesMonster(struct player *dealer, struct player *receiver, int x_new
 		clear_place(old_x2, old_y2);
 		*x_old1 = old_x2;
 		*y_old1 = old_y2;
-		*x_old2 = old_x1;
+		*x_old2 = -1;
 		*y_old2 = old_y1;
 		// Swap monsters
 		dealer->monster->x = old_x1;

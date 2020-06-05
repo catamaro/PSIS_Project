@@ -24,7 +24,6 @@
 #define LEMON 4
 #define CHERRY 5
 #define SUPERPACMAN 6
-
 #define SCORE 7
 
 void * threadReceive(void *arg);

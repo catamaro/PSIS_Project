@@ -3,6 +3,8 @@
 #include "comm.h"
 #include "list_handler.h"
 
+pthread_mutex_t mutex_insert_player;
+
 int send_board_dim(int x, int y, int sock_fd){
     char message[50];
     int err;
@@ -40,15 +42,14 @@ int send_board_setup(int sock_fd){
 		if(err == -1) return -1;
 	}
 
-	/*head = getFruitList();
+	head = getFruitList();
 	current = head;
 	
 	for (current = head; current != NULL; current = current->next)
 	{
-		
 		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
-	}*/
+	}
 	
 	// end of messages of type 1
 	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
@@ -223,6 +224,7 @@ int broadcast_update(int x_new, int y_new, int x, int y, int character, struct c
 
 	for (current = head; current != NULL; current = current->next)
 	{
+		printf("id: %d type:%d x:%d y:%d\n", current->id, character, x, y);
 		err = send_update(current->sock_fd, character, x, y, x_new, y_new, rgb);
 		if(err == -1) return -1;
 	}
@@ -281,22 +283,21 @@ int send_score(int sock_fd, int player_id, int score){
 	message->x = player_id;
 	message->y = score;
 	message->character = SCORE;
-
-	err = write(sock_fd, message, sizeof(*message)); 
-	if(err <= 0){
-		perror("write: ");
-		close(sock_fd);
-		exit(EXIT_FAILURE);
+	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
+		err = write(sock_fd, message, sizeof(*message)); 
+		if(err <= 0){
+			perror("write: ");
+			close(sock_fd);
+			exit(EXIT_FAILURE);
+		}
+		pthread_mutex_unlock(&mutex_insert_player);	
 	}
 
 	return 0;
 }
 
-
-pthread_mutex_t mutex_insert_player;
-
 void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
-					struct color *new_color, int *num_players, int new_fd){
+					struct color *new_color, int *num_players, int new_fd, int *num_fruits, int ***board){
 	struct player *new_player;
 
 	int err;
@@ -325,6 +326,10 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	printf("\nPlayer %d entered the game\n", *num_players);	
 
+	(*num_players) ++;
+
+	ManageFruits(num_fruits, num_players, board);
+
 	pthread_mutex_unlock(&mutex_insert_player);
 }
 
@@ -343,12 +348,11 @@ int** CheckInactivity(int **board)
 
 	if (current == NULL)
 		return board;
-	
-	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
 
-		//navigate through list
-		while (current)
-		{		
+	//navigate through list
+	while (current)
+	{		
+		if(pthread_mutex_trylock(&mutex_insert_player) == 0){
 			//if it is last player
 			if (current->next == NULL)
 			{
@@ -460,9 +464,13 @@ int** CheckInactivity(int **board)
 				}
 				current = current->next;
 			}
+		
+			pthread_mutex_unlock(&mutex_insert_player);
+			printf("I live the mutex!\n");
 		}
+		pthread_mutex_unlock(&mutex_insert_player);
+		printf("I live the mutex!\n");
 	}
-	pthread_mutex_unlock(&mutex_insert_player);
 
 	return board;
 }
@@ -474,7 +482,7 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 		return;
 	if (*num_fruits == (*num_players - 1) * 2)
 		return;
-	while(pthread_mutex_trylock(&mutex_insert_player) != 0);
+	if(pthread_mutex_trylock(&mutex_insert_player) == 0);
 	if (*num_fruits > (*num_players - 1) * 2)
 	{
 		do
@@ -491,6 +499,8 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 		} while (*num_fruits > (*num_players - 1) * 2);
 
 		pthread_mutex_unlock(&mutex_insert_player);
+		printf("I live mutex\n");
+
 		return;
 	}
 	do
@@ -517,4 +527,6 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 	} while (*num_fruits < (*num_players - 1) * 2);		
 	
 	pthread_mutex_unlock(&mutex_insert_player);
+	printf("I live mutex\n");
+
 }
