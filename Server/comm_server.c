@@ -277,14 +277,10 @@ int broadcast_score(int player_id, int score){
 	struct player *current = head;
 	int err;
 
-	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
-		for (current = head; current != NULL; current = current->next)
-		{
-			printf("id: %d type:%d\n", player_id, score);
-			err = send_score(current->sock_fd, player_id, score);
-			if(err == -1) return -1;
-		}
-		pthread_mutex_unlock(&mutex_insert_player);
+	for (current = head; current != NULL; current = current->next)
+	{
+		err = send_score(current->sock_fd, player_id, score);
+		if(err == -1) return -1;
 	}
 	return 0;
 }
@@ -303,7 +299,7 @@ int send_score(int sock_fd, int player_id, int score){
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
-
+	sleep(0.5);
 	return 0;
 }
 
@@ -322,13 +318,15 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	// send board dimensions to new client
 	err = send_board_dim(board_x, board_y, new_player->sock_fd);
-	sleep(1);
 	if (err == -1)
 		exit(EXIT_FAILURE);
 
 	err = send_board_setup(new_player->sock_fd);
 	if (err == -1)
 		exit(EXIT_FAILURE);
+
+	broadcast_update(pacman->x, pacman->y, pacman->x, pacman->y, PACMAN, new_color);
+	broadcast_update(monster->x, monster->y, monster->x, monster->y, MONSTER, new_color);
 
 	printf("\nPlayer %d entered the game\n", *num_players);
 

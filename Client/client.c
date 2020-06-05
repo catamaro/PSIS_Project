@@ -4,11 +4,11 @@
 
 int done = 0;
 int board_load = 0;
+char *IP;
 
 int main(int argc, char* argv[]){
 
 	SDL_Event event;
-	char *IP;
 	int port;
 	int dir = -1;
 	int board_x, board_y;
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
 
 void * threadReceive(void *arg){
 	int err;
-	player *my_player = (player*) arg;
+	struct player *my_player = (player*) arg;
 	struct init_msg_1 *message1 = malloc(sizeof(struct init_msg_1));
 	struct init_msg_2 *message2 = malloc(sizeof(struct init_msg_2));
 	struct update_msg *message = malloc(sizeof(update_msg));
@@ -144,7 +144,11 @@ void * threadReceive(void *arg){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
 			if(err <= 0){
 				perror("receive ");
-				close(my_player->sock_fd);
+				serverClosed(my_player);
+				free(message1);
+				free(message2);
+				free(message);
+				free(rgb);
 				exit(EXIT_FAILURE);
 			}
 			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->x,message1->y);
@@ -163,7 +167,10 @@ void * threadReceive(void *arg){
 			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
 			if(err <= 0){
 				perror("receive ");
-				close(my_player->sock_fd);
+				serverClosed(my_player);
+				free(message2);
+				free(message);
+				free(rgb);
 				exit(EXIT_FAILURE);
 			}
 			
@@ -188,7 +195,9 @@ void * threadReceive(void *arg){
 			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
 			if(err <= 0){
 				perror("receive ");
-				close(my_player->sock_fd);
+				serverClosed(my_player);
+				free(message);
+				free(rgb);
 				exit(EXIT_FAILURE);
 			}
 
@@ -250,4 +259,13 @@ void * threadReceive(void *arg){
 	free(rgb);
 
 	return (NULL);
+}
+
+void serverClosed(struct player *my_player){
+	close(my_player->sock_fd);
+	free(my_player->monster);
+	free(my_player->pacman);
+	free(my_player->rgb);
+	free(my_player);
+	free(IP);
 }

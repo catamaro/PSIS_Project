@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 			fruit_update_time = current_time;
 		}
 		// Poll a cada 1 minuto para dar print ao score
-		if (delta_score >= (1000 * 60) && num_players > 1)
+		if (delta_score >= (1000 * 10) && num_players > 1)
 		{
 			PrintPlayerScore();
 			score_update_time = current_time;
@@ -349,6 +349,8 @@ void clientDisconnect(int *sock_fd)
 {
 	int x, y;
 	struct player *remove_player = findPlayer(*sock_fd);
+
+	printf("Client will disconnect\n");
 
 	x = remove_player->monster->x;
 	y = remove_player->monster->y;

@@ -257,6 +257,8 @@ void freeList()
       free(tmp->pacman);
       free(tmp->monster);
       free(tmp->rgb);
+      pthread_cancel(tmp->thread_id);
+
       free(tmp);
    }
 }

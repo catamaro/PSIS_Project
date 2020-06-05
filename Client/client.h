@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include "UI_library.h"
+#include "structs.h"
 #include <pthread.h>
 #include <sys/socket.h> 
 #include <arpa/inet.h>
@@ -28,5 +29,6 @@
 
 void * threadReceive(void *arg);
 void * threadSend(void *arg);
+void serverClosed(struct player *my_player);
 
 #endif
