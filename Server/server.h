@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define LEFT 10
 #define RIGHT 11
@@ -47,4 +48,7 @@ void clientDisconnect(int *sock_fd);
 void PrintPlayerScore();
 void ResetScore();
 void IncrementMovement();
+void freeBoard();
+void closeFd();
+
 #endif

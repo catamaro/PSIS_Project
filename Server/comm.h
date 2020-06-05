@@ -30,6 +30,6 @@ void init_insert_player_mutex();
 void destroy_insert_player_mutex();
 int **CheckInactivity(int **board);
 void ManageFruits(int *num_fruits, int *num_players, int ***board);
-
+void sigHandler(int sig);
 
 #endif

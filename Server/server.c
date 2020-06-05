@@ -66,6 +66,13 @@ int main(int argc, char *argv[])
 
 	init_insert_player_mutex();
 
+	struct sigaction sa;
+    sa.sa_handler = sigHandler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+    signal(SIGPIPE, SIG_IGN);
+
 	int x_new, y_new, x, y;
 	int x_new1 = -1, x_new2 = -1, y_new1 = -1, y_new2 = -1;
 	int x_old1 = -1, x_old2 = -1, y_old1 = -1, y_old2 = -1;
@@ -242,6 +249,14 @@ int main(int argc, char *argv[])
 
 	destroy_insert_player_mutex();
 	exit(EXIT_SUCCESS);
+}
+void freeBoard(){
+	free(board[0]);
+	free(board);
+}
+
+void closeFd(){
+	close(server_fd);
 }
 
 void *threadAccept(void *arg)

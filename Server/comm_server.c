@@ -5,6 +5,21 @@
 
 pthread_mutex_t mutex_insert_player;
 
+void sigHandler(int sig){
+
+	printf("\nctrl+c was pressed application will terminate\n");
+	freeBoard();
+	freeList();
+	freePosList();
+
+	close_board_windows();
+	closeFd();
+
+	destroy_insert_player_mutex();
+
+	exit(EXIT_FAILURE);
+}
+
 int send_board_dim(int x, int y, int sock_fd){
     struct position *board_dim = malloc(sizeof(struct position));
     int err;
@@ -281,14 +296,12 @@ int send_score(int sock_fd, int player_id, int score){
 	message->x = player_id;
 	message->y = score;
 	message->character = SCORE;
-	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
-		err = write(sock_fd, message, sizeof(*message));
-		if(err <= 0){
-			perror("write: ");
-			close(sock_fd);
-			exit(EXIT_FAILURE);
-		}
-		pthread_mutex_unlock(&mutex_insert_player);
+
+	err = write(sock_fd, message, sizeof(*message));
+	if(err <= 0){
+		perror("write: ");
+		close(sock_fd);
+		exit(EXIT_FAILURE);
 	}
 
 	return 0;
@@ -468,7 +481,7 @@ int** CheckInactivity(int **board)
 void ManageFruits(int *num_fruits, int *num_players, int ***board)
 {
 
-	if (*num_players <= 1)
+	if (*num_players <= 1 && *num_fruits == 0)
 		return;
 	if (*num_fruits == (*num_players - 1) * 2)
 		return;
