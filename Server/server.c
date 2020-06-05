@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58001);
+	local_addr.sin_port = htons(58000);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 			fruit_update_time = current_time;
 		}
 		// Poll a cada 1 minuto para dar print ao score
-		if (delta_score >= (1000 * 10) && num_players > 1)
+		if (delta_score >= (1000 * 60) && num_players > 1)
 		{
 			PrintPlayerScore();
 			score_update_time = current_time;

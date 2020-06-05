@@ -3,7 +3,9 @@
 #include "comm.h"
 #include "list_handler.h"
 
-pthread_mutex_t mutex_insert_player;
+pthread_mutex_t run_insert_player = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t run_cond = PTHREAD_COND_INITIALIZER;
+int run_thread = 0;
 
 void sigHandler(int sig){
 
@@ -309,7 +311,9 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	int err;
 
-	pthread_mutex_lock(&mutex_insert_player);
+	run_thread = 0;
+	// locks the thread for other threads
+	pthread_mutex_lock(&run_insert_player);
 	// add new player to player list
 	new_player = insertPlayer(pacman, monster, new_color, *num_players, new_fd);
 
@@ -330,15 +334,20 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	printf("\nPlayer %d entered the game\n", *num_players);
 
-	pthread_mutex_unlock(&mutex_insert_player);
+    //pthread_cond_signal(&run_cond);
+	//printf("I FREE MY SLAVES!\n");
+	pthread_mutex_unlock(&run_insert_player);
+	printf("I UNBLOCK MYSELF!\n");
+	run_thread = 1;
+
 }
 
 void init_insert_player_mutex(){
-	pthread_mutex_init(&mutex_insert_player, NULL);
+	pthread_mutex_init(&run_insert_player, NULL);
 }
 
 void destroy_insert_player_mutex(){
-	pthread_mutex_destroy(&mutex_insert_player);
+	pthread_mutex_destroy(&run_insert_player);
 }
 
 int** CheckInactivity(int **board)
@@ -352,126 +361,122 @@ int** CheckInactivity(int **board)
 	//navigate through list
 	while (current)
 	{
-		if(pthread_mutex_trylock(&mutex_insert_player) == 0){
-			//if it is last player
-			if (current->next == NULL)
+		while(!run_thread);
+			
+		//if it is last player
+		if (current->next == NULL)
+		{
+
+			if (current->inactive_time_pacman >= (1000 * 30))
 			{
+				// Pacman Inativo
+				int x, y, x_old, y_old;
+				RandomPositionRules(&x, &y);
+				x_old = current->pacman->x;
+				y_old = current->pacman->y;
+				board[x_old][y_old] = EMPTY;
+				clear_place(x_old, y_old);
+				current->pacman->x = x;
+				current->pacman->y = y;
 
-				if (current->inactive_time_pacman >= (1000 * 30))
+				if (current->times < 1)
 				{
-					// Pacman Inativo
-					int x, y, x_old, y_old;
-					RandomPositionRules(&x, &y);
-					x_old = current->pacman->x;
-					y_old = current->pacman->y;
-					board[x_old][y_old] = EMPTY;
-					clear_place(x_old, y_old);
-					current->pacman->x = x;
-					current->pacman->y = y;
+					board[x][y] = PACMAN;
+					paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
 
-					if (current->times < 1)
-					{
-						board[x][y] = PACMAN;
-						paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-						broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
-
-					}
-					else
-					{
-						board[x][y] = SUPERPACMAN;
-						paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-						broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
-					}
-					current->inactive_time_pacman = 0;
 				}
 				else
 				{
-					current->inactive_time_pacman = current->inactive_time_pacman + 1000;
+					board[x][y] = SUPERPACMAN;
+					paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
 				}
-				if (current->inactive_time_monster >= (1000 * 30))
-				{
-					// Monstro Inativo
-					int x, y, x_old, y_old;
-					RandomPositionRules(&x, &y);
-					x_old = current->monster->x;
-					y_old = current->monster->y;
-					board[x_old][y_old] = EMPTY;
-					clear_place(x_old, y_old);
-					current->monster->x = x;
-					current->monster->y = y;
-					board[x][y] = MONSTER;
-					paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
-					current->inactive_time_monster = 0;
-				}
-				else
-				{
-					current->inactive_time_monster = current->inactive_time_monster + 1000;
-				}
-				current = current->next;
-				break;
+				current->inactive_time_pacman = 0;
 			}
 			else
 			{
-				if (current->inactive_time_pacman >= (1000 * 3))
-				{
-					// Pacman Inativo
-					int x, y, x_old, y_old;
-					RandomPositionRules(&x, &y);
-					x_old = current->pacman->x;
-					y_old = current->pacman->y;
-					board[x_old][y_old] = EMPTY;
-					clear_place(x_old, y_old);
-					current->pacman->x = x;
-					current->pacman->y = y;
-					if (current->times < 1)
-					{
-						board[x][y] = PACMAN;
-						paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-						broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
-					}
-					else
-					{
-						board[x][y] = SUPERPACMAN;
-						paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-						broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
-					}
-					current->inactive_time_pacman = 0;
-				}
-				else
-				{
-					current->inactive_time_pacman = current->inactive_time_pacman + 1000;
-				}
-				if (current->inactive_time_monster >= (1000 * 3))
-				{
-					// Monstro Inativo
-					int x, y, x_old, y_old;
-					RandomPositionRules(&x, &y);
-					x_old = current->monster->x;
-					y_old = current->monster->y;
-					board[x_old][y_old] = EMPTY;
-					clear_place(x_old, y_old);
-					current->monster->x = x;
-					current->monster->y = y;
-					board[x][y] = MONSTER;
-					paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
-					current->inactive_time_monster = 0;
-				}
-				else
-				{
-					current->inactive_time_monster = current->inactive_time_monster + 1000;
-				}
-				current = current->next;
+				current->inactive_time_pacman = current->inactive_time_pacman + 1000;
 			}
 
-			pthread_mutex_unlock(&mutex_insert_player);
-			return board;
+			if (current->inactive_time_monster >= (1000 * 30))
+			{
+				// Monstro Inativo
+				int x, y, x_old, y_old;
+				RandomPositionRules(&x, &y);
+				x_old = current->monster->x;
+				y_old = current->monster->y;
+				board[x_old][y_old] = EMPTY;
+				clear_place(x_old, y_old);
+				current->monster->x = x;
+				current->monster->y = y;
+				board[x][y] = MONSTER;
+				paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+				broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
+				current->inactive_time_monster = 0;
+			}
+			else
+			{
+				current->inactive_time_monster = current->inactive_time_monster + 1000;
+			}
+			current = current->next;
+			break;
 		}
-		pthread_mutex_unlock(&mutex_insert_player);
-		return board;
+		else
+		{
+			if (current->inactive_time_pacman >= (1000 * 3))
+			{
+				// Pacman Inativo
+				int x, y, x_old, y_old;
+				RandomPositionRules(&x, &y);
+				x_old = current->pacman->x;
+				y_old = current->pacman->y;
+				board[x_old][y_old] = EMPTY;
+				clear_place(x_old, y_old);
+				current->pacman->x = x;
+				current->pacman->y = y;
+				if (current->times < 1)
+				{
+					board[x][y] = PACMAN;
+					paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
+				}
+				else
+				{
+					board[x][y] = SUPERPACMAN;
+					paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
+				}
+				current->inactive_time_pacman = 0;
+			}
+			else
+			{
+				current->inactive_time_pacman = current->inactive_time_pacman + 1000;
+			}
+			if (current->inactive_time_monster >= (1000 * 3))
+			{
+				// Monstro Inativo
+				int x, y, x_old, y_old;
+				RandomPositionRules(&x, &y);
+				x_old = current->monster->x;
+				y_old = current->monster->y;
+				board[x_old][y_old] = EMPTY;
+				clear_place(x_old, y_old);
+				current->monster->x = x;
+				current->monster->y = y;
+				board[x][y] = MONSTER;
+				paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+				broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
+				current->inactive_time_monster = 0;
+			}
+			else
+			{
+				current->inactive_time_monster = current->inactive_time_monster + 1000;
+			}
+			
+		}
+		current = current->next;
 	}
-	pthread_mutex_unlock(&mutex_insert_player);
 
 	return board;
 }
