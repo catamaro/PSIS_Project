@@ -259,7 +259,7 @@ void *threadClient(void *arg)
 		SDL_zero(new_event);
 
 		err = rcv_event(*player_fd, &new_event, &character);
-		if (err <= 0)
+		if (err == -1)
 		{
 			clientDisconnect(player_fd);
 			close(*player_fd);

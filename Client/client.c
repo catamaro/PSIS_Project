@@ -80,6 +80,8 @@ int main(int argc, char* argv[]){
 	//receives messages from server
 	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
 	
+	int x = 0, y = 0;
+	int last_x = 0, last_y = 0;
 	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
@@ -87,15 +89,16 @@ int main(int argc, char* argv[]){
 			}
 			//when the mouse mooves the monster also moves
 			if(event.type == SDL_MOUSEMOTION){
-				int x = 0, y = 0;
+				x = 0, y = 0;
 
 				get_board_place(event.motion.x, event.motion.y, &x, &y);
 
-				if(x == my_player->pacman->x && y == my_player->pacman->y) continue;
+				if(x == last_x && y == last_y) continue;
 
 				err = send_event(PACMAN,  x,  y,  -1, my_player);
 				if(err == -1) exit(EXIT_FAILURE);
-				
+				last_x = x;
+				last_y = y;
 			}
 			if(event.type == SDL_KEYDOWN){
 
