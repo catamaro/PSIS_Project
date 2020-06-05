@@ -358,15 +358,9 @@ void destroy_insert_player_mutex(){
 	pthread_mutex_destroy(&run_insert_player);
 }
 
-int** CheckInactivity(int **board, struct player *my_player, int num_players)
+int** CheckInactivity(int **board, struct player *my_player)
 {
-	if(num_players == 1) return board;
-
 	pthread_mutex_trylock(&run_rcv_event);
-	run_thread2 = 1;
-
-	//while(!run_thread);	
-	printf("I AM NOT\n");
 	
 	if ((my_player->inactive_time_pacman) >= (1000 * 30))
 	{
@@ -426,7 +420,6 @@ int** CheckInactivity(int **board, struct player *my_player, int num_players)
 	}
 
 	pthread_mutex_unlock(&run_rcv_event);
-	run_thread2 = 0;
 
 	return board;
 }

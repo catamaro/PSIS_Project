@@ -5,6 +5,8 @@
 int done = 0;
 int board_load = 0;
 char *IP;
+int last_x = 0, last_y = 0;
+
 
 int main(int argc, char* argv[]){
 
@@ -19,7 +21,7 @@ int main(int argc, char* argv[]){
 	my_player->rgb = malloc(sizeof(struct color));
 
 	if(argc != 6){
-		printf("error");
+		printf("error: invalid parameters [IP] [Port] [r] [g] [b]");
 		exit(EXIT_FAILURE);
 	}
 	else{
@@ -81,7 +83,6 @@ int main(int argc, char* argv[]){
 	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
 	
 	int x = 0, y = 0;
-	int last_x = 0, last_y = 0;
 	while(!done){
 		while (SDL_PollEvent(&event)) {
 			if(board_load != 2) continue;
@@ -96,7 +97,7 @@ int main(int argc, char* argv[]){
 				if( (abs(x - my_player->pacman->x) + abs(y - my_player->pacman->y) ) == 1){
 					err = send_event(PACMAN,  x,  y,  -1, my_player);
 					if(err == -1) exit(EXIT_FAILURE);
-					last_x = x;
+					last_x = x; 
 					last_y = y;
 				}
 			}
@@ -211,7 +212,9 @@ void * threadReceive(void *arg){
 					message->g,  message->b);
 
 			if(message->x != -1)
-                clear_place(message->x, message->y);
+				clear_place(message->x, message->y);
+			
+                
 			character = message->character;
 			new_x = message->new_x;
 			new_y = message->new_y;

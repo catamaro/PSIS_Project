@@ -7,7 +7,7 @@ int server_fd;
 int board_x;
 int board_y;
 int empty_blocks;
-int num_bricks;
+int num_bricks = 0;
 int num_fruits = 0;
 int num_players = 0;
 int **board;
@@ -120,12 +120,10 @@ int main(int argc, char *argv[])
 				y_new = new_position->y;
 
 				if(event.type == Event_MoveMonster && player1->monster_tokens == 0){
-					printf("Test monster\n");
 					continue;
 				}
 				if(event.type == Event_MovePacman && player1->pacman_tokens == 0)
 				{
-					printf("Test pacman\n");
 					continue;
 				}
 					
@@ -266,7 +264,7 @@ void *threadAccept(void *arg)
 
 		if (num_players > MAX_PLAYERS)
 		{
-			printf("Maximum number of players achived\n");
+			printf("maximum number of players achived\n");
 			close(new_fd);
 			continue;
 		}
@@ -334,18 +332,15 @@ void *threadClientTime(void *arg)
 
 	while (!done)
 	{
-		printf("\nINSIDE THREAD !\n");
 		sleep(0.5);
 
 		unsigned int current_time = SDL_GetTicks();
 		unsigned int delta_movement = current_time - movement_update_time;
 		unsigned int delta_inactivity = current_time - inactivity_update_time;
 
-		printf("\nTIME:%d !\n", delta_inactivity);
-
 		if (delta_inactivity >= 1000)
 		{
-			board = CheckInactivity(board, my_player, num_players);
+			board = CheckInactivity(board, my_player);
 			inactivity_update_time = current_time;
 		}
 		if(delta_movement >= 500){

@@ -13,7 +13,7 @@ int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
 		exit(EXIT_FAILURE);
 	}
 
-    printf("\nclt rcv board size: %d %d\n", board_dim->x, board_dim->y);
+    printf("clt rcv board size: %d %d\n", board_dim->x, board_dim->y);
 
 	*board_x = board_dim->x;
 	*board_y = board_dim->y;
@@ -32,7 +32,7 @@ int send_color(int sock_fd, struct color *new_color){
 		close(sock_fd);
 		return -1;
 	}
-	printf("\nclt snd color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
+	printf("clt snd color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
 
 	return 0;
 }
