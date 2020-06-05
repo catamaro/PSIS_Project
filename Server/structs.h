@@ -49,6 +49,7 @@ typedef struct player
   int id;
   int sock_fd;
   pthread_t thread_id;
+  pthread_t time_id;
   struct color *rgb;
   int times;
   int score;

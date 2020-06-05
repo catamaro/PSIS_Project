@@ -80,10 +80,8 @@ int main(int argc, char *argv[])
 	struct position *new_position;
 
 	fruit_update_time = SDL_GetTicks();
-	unsigned int inactivity_update_time = SDL_GetTicks();
 	unsigned int score_update_time = SDL_GetTicks();
 	unsigned int reset_update_time = SDL_GetTicks();
-	unsigned int movement_update_time = SDL_GetTicks();
 
 
 	while (!done)
@@ -91,9 +89,7 @@ int main(int argc, char *argv[])
 		SDL_Delay(20);
 		unsigned int current_time = SDL_GetTicks();
 		unsigned int delta_score = current_time - score_update_time;
-		unsigned int delta_inactivity = current_time - inactivity_update_time;
 		unsigned int delta_reset = current_time - reset_update_time;
-		unsigned int delta_movement = current_time - movement_update_time;
 		unsigned int delta_fruit = current_time - fruit_update_time;
 
 		while (SDL_PollEvent(&event))
@@ -123,12 +119,12 @@ int main(int argc, char *argv[])
 				x_new = new_position->x;
 				y_new = new_position->y;
 
-				if (x == x_new && y == y_new){
+				/*if (x == x_new && y == y_new){
 					continue;
-					if(event.type == Event_MoveMonster && player1->monster_tokens == 0){
-						printf("Test monster\n");
-						continue;
-					}
+				}*/
+				if(event.type == Event_MoveMonster && player1->monster_tokens == 0){
+					printf("Test monster\n");
+					continue;
 				}
 				if(event.type == Event_MovePacman && player1->pacman_tokens == 0)
 				{
@@ -226,16 +222,6 @@ int main(int argc, char *argv[])
 			ResetScore();
 			reset_update_time = current_time;
 		}
-		// Poll a cada 1 segundo para verificar inatividade
-		if (delta_inactivity >= 1000)
-		{
-			board = CheckInactivity(board);
-			inactivity_update_time = current_time;
-		}
-		if(delta_movement >= 500){
-			IncrementMovement();
-			movement_update_time = current_time;
-        }
 	}
 
 	free(board[0]);
@@ -319,7 +305,8 @@ void *threadAccept(void *arg)
 
 void *threadClient(void *arg)
 {
-	int *player_fd = (int *)arg;
+	struct player *my_player = (struct player *)arg;
+	int sock_fd = my_player->sock_fd;
 	int err, character;
 	SDL_Event new_event;
 
@@ -327,28 +314,54 @@ void *threadClient(void *arg)
 	{
 		SDL_zero(new_event);
 
-		err = rcv_event(*player_fd, &new_event, &character);
+		err = rcv_event(sock_fd, &new_event, &character);
 		if (err == -1)
 		{
-			clientDisconnect(player_fd);
-			close(*player_fd);
+			clientDisconnect(sock_fd);
+			close(sock_fd);
 			return (NULL);
 		}
-		if (character == MONSTER)
-			new_event.type = Event_MoveMonster;
-		if (character == PACMAN)
-			new_event.type = Event_MovePacman;
+		if (character == MONSTER) new_event.type = Event_MoveMonster;
+		
+		if (character == PACMAN) new_event.type = Event_MovePacman;
 
 		SDL_PushEvent(&new_event);
 	}
 
 	return (NULL);
 }
+void *threadClientTime(void *arg)
+{
+	struct player *my_player = (struct player *)arg;
+	unsigned int inactivity_update_time = SDL_GetTicks();
+	unsigned int movement_update_time = SDL_GetTicks();
 
-void clientDisconnect(int *sock_fd)
+	while (!done)
+	{
+		printf("\nINSIDE THREAD !\n");
+
+		unsigned int current_time = SDL_GetTicks();
+		unsigned int delta_movement = current_time - movement_update_time;
+		unsigned int delta_inactivity = current_time - inactivity_update_time;
+
+		if (delta_inactivity >= 1000)
+		{
+			board = CheckInactivity(board, my_player);
+			inactivity_update_time = current_time;
+		}
+		if(delta_movement >= 500){
+			IncrementMovement(my_player);
+			movement_update_time = current_time;
+		}
+	}
+
+	return (NULL);
+}
+
+void clientDisconnect(int sock_fd)
 {
 	int x, y;
-	struct player *remove_player = findPlayer(*sock_fd);
+	struct player *remove_player = findPlayer(sock_fd);
 
 	printf("Client will disconnect\n");
 
@@ -1213,25 +1226,11 @@ void ResetScore()
 	printf("Reset\n");
 }
 
-void IncrementMovement(){
-    struct player* current = getPlayerList();
-    if(current == NULL)
-        return;
-
-    while(current){
-        if(current->next == NULL){
-            if(current->pacman_tokens < 2)
-                current->pacman_tokens = current->pacman_tokens + 1;
-            if(current->monster_tokens < 2)
-                current->monster_tokens = current->monster_tokens + 1;
-            return;
-        }
-        else{
-            if(current->pacman_tokens < 2)
-                current->pacman_tokens = current->pacman_tokens + 1;
-            if(current->monster_tokens < 2)
-                current->monster_tokens = current->monster_tokens + 1;
-            current = current->next;
-        }    
-    }        
+void IncrementMovement(struct player *my_player){
+  
+	if(my_player->pacman_tokens < 2)
+		my_player->pacman_tokens = my_player->pacman_tokens + 1;
+	if(my_player->monster_tokens < 2)
+		my_player->monster_tokens = my_player->monster_tokens + 1;
+	return;
 }

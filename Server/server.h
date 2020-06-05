@@ -30,6 +30,7 @@
 
 void * threadAccept(void *arg);
 void * threadClient(void *arg);
+void *threadClientTime(void *arg);
 int ** loadBoard(char* arg);
 void bounceBounds(int x1, int y1, int* x_new, int* y_new);
 void RandomPositionConnect(int* x1, int* x2, int* y1, int* y2);
@@ -43,11 +44,11 @@ void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new,
 void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x_new, int y_new,
 						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
 							int* x_old1, int* y_old1, int* x_old2, int* y_old2);
-void clientDisconnect(int *sock_fd);
+void clientDisconnect(int sock_fd);
 
 void PrintPlayerScore();
 void ResetScore();
-void IncrementMovement();
+void IncrementMovement(struct player *my_player);
 void freeBoard();
 void closeFd();
 

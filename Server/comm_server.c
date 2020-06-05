@@ -4,8 +4,11 @@
 #include "list_handler.h"
 
 pthread_mutex_t run_insert_player = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t run_rcv_event = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_cond_t run_cond = PTHREAD_COND_INITIALIZER;
 int run_thread = 0;
+int run_thread2 = 0;
 
 void sigHandler(int sig){
 
@@ -174,7 +177,9 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	struct position *new_position = malloc(sizeof(struct position));
 	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 
-	// falta usar mutex para impedir que várias threads corram ao mesmo tempo
+	while(!run_thread2);
+
+	pthread_mutex_lock(&run_rcv_event);
 
 	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
@@ -225,6 +230,7 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 		new_event->user.data1 = list;
 		new_event->user.data2 = new_position;
 	}
+	pthread_mutex_unlock(&run_rcv_event);
 
 	return 0;
 }
@@ -318,8 +324,10 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 	new_player = insertPlayer(pacman, monster, new_color, *num_players, new_fd);
 
 	// creeate thread for new client
-	pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)&(new_player->sock_fd));
-
+	pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player);
+	printf("\nBEFORE CREATE !\n");
+	pthread_create(&(new_player->time_id), NULL, threadClientTime, (void *)new_player);
+	printf("\nAFTER CREATE !\n");
 	// send board dimensions to new client
 	err = send_board_dim(board_x, board_y, new_player->sock_fd);
 	if (err == -1)
@@ -350,133 +358,49 @@ void destroy_insert_player_mutex(){
 	pthread_mutex_destroy(&run_insert_player);
 }
 
-int** CheckInactivity(int **board)
+int** CheckInactivity(int **board, struct player *my_player)
 {
-	//start from the first link
-	struct player *current = getPlayerList();
+	printf("AM I BEING KICKED?\n");
+	pthread_mutex_trylock(&run_rcv_event);
+	run_thread2 = 1;
 
-	if (current == NULL)
-		return board;
-
-	//navigate through list
-	while (current)
+	while(!run_thread);	
+	printf("I AM NOT\n");
+	
+	if (my_player->inactive_time_pacman >= (1000 * 30))
 	{
-		while(!run_thread);
-			
-		//if it is last player
-		if (current->next == NULL)
+		// Pacman Inativo
+		int x, y, x_old, y_old;
+		RandomPositionRules(&x, &y);
+		x_old = my_player->pacman->x;
+		y_old = my_player->pacman->y;
+		board[x_old][y_old] = EMPTY;
+		clear_place(x_old, y_old);
+		my_player->pacman->x = x;
+		my_player->pacman->y = y;
+
+		if (my_player->times < 1)
 		{
+			board[x][y] = PACMAN;
+			paint_pacman(x, y, my_player->rgb->r, my_player->rgb->g, my_player->rgb->b);
+			broadcast_update(x, y, x_old, y_old, PACMAN, my_player->rgb);
 
-			if (current->inactive_time_pacman >= (1000 * 30))
-			{
-				// Pacman Inativo
-				int x, y, x_old, y_old;
-				RandomPositionRules(&x, &y);
-				x_old = current->pacman->x;
-				y_old = current->pacman->y;
-				board[x_old][y_old] = EMPTY;
-				clear_place(x_old, y_old);
-				current->pacman->x = x;
-				current->pacman->y = y;
-
-				if (current->times < 1)
-				{
-					board[x][y] = PACMAN;
-					paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
-
-				}
-				else
-				{
-					board[x][y] = SUPERPACMAN;
-					paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
-				}
-				current->inactive_time_pacman = 0;
-			}
-			else
-			{
-				current->inactive_time_pacman = current->inactive_time_pacman + 1000;
-			}
-
-			if (current->inactive_time_monster >= (1000 * 30))
-			{
-				// Monstro Inativo
-				int x, y, x_old, y_old;
-				RandomPositionRules(&x, &y);
-				x_old = current->monster->x;
-				y_old = current->monster->y;
-				board[x_old][y_old] = EMPTY;
-				clear_place(x_old, y_old);
-				current->monster->x = x;
-				current->monster->y = y;
-				board[x][y] = MONSTER;
-				paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-				broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
-				current->inactive_time_monster = 0;
-			}
-			else
-			{
-				current->inactive_time_monster = current->inactive_time_monster + 1000;
-			}
-			current = current->next;
-			break;
 		}
 		else
 		{
-			if (current->inactive_time_pacman >= (1000 * 3))
-			{
-				// Pacman Inativo
-				int x, y, x_old, y_old;
-				RandomPositionRules(&x, &y);
-				x_old = current->pacman->x;
-				y_old = current->pacman->y;
-				board[x_old][y_old] = EMPTY;
-				clear_place(x_old, y_old);
-				current->pacman->x = x;
-				current->pacman->y = y;
-				if (current->times < 1)
-				{
-					board[x][y] = PACMAN;
-					paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
-				}
-				else
-				{
-					board[x][y] = SUPERPACMAN;
-					paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-					broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
-				}
-				current->inactive_time_pacman = 0;
-			}
-			else
-			{
-				current->inactive_time_pacman = current->inactive_time_pacman + 1000;
-			}
-			if (current->inactive_time_monster >= (1000 * 3))
-			{
-				// Monstro Inativo
-				int x, y, x_old, y_old;
-				RandomPositionRules(&x, &y);
-				x_old = current->monster->x;
-				y_old = current->monster->y;
-				board[x_old][y_old] = EMPTY;
-				clear_place(x_old, y_old);
-				current->monster->x = x;
-				current->monster->y = y;
-				board[x][y] = MONSTER;
-				paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
-				broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
-				current->inactive_time_monster = 0;
-			}
-			else
-			{
-				current->inactive_time_monster = current->inactive_time_monster + 1000;
-			}
-			
+			board[x][y] = SUPERPACMAN;
+			paint_powerpacman(x, y, my_player->rgb->r, my_player->rgb->g, my_player->rgb->b);
+			broadcast_update(x, y, x_old, y_old, SUPERPACMAN, my_player->rgb);
 		}
-		current = current->next;
+		my_player->inactive_time_pacman = 0;
 	}
+	else
+	{
+		my_player->inactive_time_pacman = my_player->inactive_time_pacman + 1000;
+	}
+
+	pthread_mutex_unlock(&run_rcv_event);
+	run_thread2 = 0;
 
 	return board;
 }

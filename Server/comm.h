@@ -28,7 +28,7 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 					struct color *new_color, int *num_players, int new_fd);
 void init_insert_player_mutex();
 void destroy_insert_player_mutex();
-int **CheckInactivity(int **board);
+int **CheckInactivity(int **board, struct player *my_player);
 void ManageFruits(int *num_fruits, int *num_players, int ***board);
 void sigHandler(int sig);
 
