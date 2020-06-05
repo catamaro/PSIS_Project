@@ -86,15 +86,12 @@ int main(int argc, char *argv[])
 
 	fruit_update_time = SDL_GetTicks();
 	unsigned int score_update_time = SDL_GetTicks();
-	unsigned int reset_update_time = SDL_GetTicks();
-
 
 	while (!done)
 	{
 		SDL_Delay(20);
 		unsigned int current_time = SDL_GetTicks();
 		unsigned int delta_score = current_time - score_update_time;
-		unsigned int delta_reset = current_time - reset_update_time;
 		unsigned int delta_fruit = current_time - fruit_update_time;
 
 		while (SDL_PollEvent(&event))
@@ -131,7 +128,6 @@ int main(int argc, char *argv[])
 				{
 					continue;
 				}
-					
 
 				if (event.type == Event_MoveMonster)
 				{
@@ -211,16 +207,10 @@ int main(int argc, char *argv[])
 			fruit_update_time = current_time;
 		}
 		// Poll a cada 1 minuto para dar print ao score
-		if (delta_score >= (1000 * 60) && num_players > 1)
+		if (delta_score >= (1000 * 3) && num_players > 1)
 		{
 			PrintPlayerScore();
 			score_update_time = current_time;
-		}
-		// Poll a cada 5 segundos para dar reset ao score se apenas ha 1 jogador
-		if (delta_reset >= (1000 * 5) && num_players == 1)
-		{
-			ResetScore();
-			reset_update_time = current_time;
 		}
 	}
 
@@ -329,6 +319,7 @@ void *threadClient(void *arg)
 
 	return (NULL);
 }
+
 void *threadClientTime(void *arg)
 {
 	struct player *my_player = (struct player *)arg;
@@ -371,6 +362,8 @@ void clientDisconnect(int sock_fd)
 
 	num_players--;
 
+	if(num_players == 1) ResetScore();
+
 	board[x][y] = EMPTY;
 	clear_place(x, y);
 	broadcast_update(x, y, x, y, board[x][y], NULL);
@@ -408,12 +401,19 @@ int **loadBoard(char *arg)
 	// Create contiguous 2D array to store bricks/board in general
 	int *temp = calloc(board_x * board_y, sizeof(int));
 	int **board = calloc(board_x, sizeof(int *));
+	if(board_x*board_y < 8)
+    {
+		free(board[0]);
+		free(board);
+        printf("Please give a bigger board (at least 8 blocks)\n");
+        exit(0);
+    }
 	board[0] = temp;
 	for (i = 1; i < board_x; i++)
 		board[i] = board[i - 1] + board_y;
 
 	//creates a windows and a board
-	create_board_window(board_x, board_y);
+	create_board_window(board_y, board_x);
 
 	// Consume first line, that is correct due to previous fscanf
 	read = getline(&line, &len, fp);
