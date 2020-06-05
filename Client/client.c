@@ -3,6 +3,7 @@
 #include "comm.h"
 
 int done = 0;
+int board_load = 0;
 
 int main(int argc, char* argv[]){
 
@@ -84,6 +85,7 @@ int main(int argc, char* argv[]){
 	int last_x = 0, last_y = 0;
 	while(!done){
 		while (SDL_PollEvent(&event)) {
+			if(board_load != 2) continue;
 			if(event.type == SDL_QUIT) {
 				done = SDL_TRUE;
 			}
@@ -129,7 +131,7 @@ int main(int argc, char* argv[]){
 }
 
 void * threadReceive(void *arg){
-	int err, count = 0;
+	int err;
 	player *my_player = (player*) arg;
 	struct init_msg_1 *message1 = malloc(sizeof(struct init_msg_1));
 	struct init_msg_2 *message2 = malloc(sizeof(struct init_msg_2));
@@ -139,7 +141,7 @@ void * threadReceive(void *arg){
 
 	while(!done){
 		// receive board info type 1 fruits and bricks 
-		if(count == 0){
+		if(board_load == 0){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
 			if(err <= 0){
 				perror("receive ");
@@ -147,7 +149,7 @@ void * threadReceive(void *arg){
 				exit(EXIT_FAILURE);
 			}
 			if(message1->character == -1){
-				count++;
+				board_load++;
 				free(message1);
 				continue;
 			}
@@ -156,7 +158,7 @@ void * threadReceive(void *arg){
 			new_y = message1->y;
 		}
 		// receive board info type 1 pacman and monster
-		else if(count == 1){
+		else if(board_load == 1){
 			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
 			if(err <= 0){
 				perror("receive ");
@@ -164,7 +166,7 @@ void * threadReceive(void *arg){
 				exit(EXIT_FAILURE);
 			}
 			if(message2->character == -1){
-				count++;
+				board_load++;
 				printf("board load completed\n");
 				free(message2);
 				continue;
@@ -177,7 +179,7 @@ void * threadReceive(void *arg){
 			rgb->b = message2->b;
 		}
 		// receive board position update
-		else if(count == 2){
+		else if(board_load == 2){
 			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
 			if(err <= 0){
 				perror("receive ");

@@ -20,7 +20,6 @@ unsigned int Event_MoveMonster = 1;
 
 int main(int argc, char *argv[])
 {
-	
 	srand(time(NULL));
 	SDL_Event event;
 	struct sockaddr_in local_addr;
@@ -351,9 +350,9 @@ int **loadBoard(char *arg)
 			// If there is a brick, store in board
 			if (line[j] == 'B')
 			{
-				board[j][i] = 1;
-				paint_brick(i, j);
-				AddPosHead(j, i, BRICK);
+				board[i][j] = 1;
+				paint_brick(j, i);
+				AddPosHead(i, j, BRICK);
 			}
 		}
 		// i is the index of current line
@@ -413,6 +412,9 @@ void ManageFruits()
 			board[x][y] = CHERRY;
 			paint_cherry(x, y);
 		}
+
+		broadcast_update(x, y, x, y, board[x][y], NULL);
+
 	} while (num_fruits < (num_players - 1) * 2);
 }
 
