@@ -12,10 +12,10 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#define LEFT 0
-#define RIGHT 1
-#define UP 2
-#define DOWN 3
+#define LEFT 10
+#define RIGHT 11
+#define UP 12
+#define DOWN 13
 
 #define EMPTY 0
 #define BRICK 1

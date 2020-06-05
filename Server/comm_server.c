@@ -328,11 +328,6 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 	pthread_mutex_unlock(&mutex_insert_player);
 }
 
-int get_insert_player_mutex(){
-	int info_mutex = pthread_mutex_trylock(&mutex_insert_player);
-	return info_mutex;
-}
-
 void init_insert_player_mutex(){
 	pthread_mutex_init(&mutex_insert_player, NULL);
 }
