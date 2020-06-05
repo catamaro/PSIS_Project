@@ -274,13 +274,18 @@ void *threadAccept(void *arg)
 		// update board with position
 		board[pacman->x][pacman->y] = PACMAN;
 		board[monster->x][monster->y] = MONSTER;
-
-		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
-						new_fd);
+		// paint both characters in server board
+		paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
+		paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
 
 		num_players ++;
 
 		ManageFruits(&num_fruits, &num_players, &board);
+
+		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
+						new_fd);
+
+		
 	}
 	
 

@@ -302,10 +302,6 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 
 	int err;
 
-	// paint both characters in server board
-	paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
-	paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
-
 	pthread_mutex_lock(&mutex_insert_player);
 
 	// add new player to player list
