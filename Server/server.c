@@ -276,8 +276,13 @@ void *threadAccept(void *arg)
 		board[monster->x][monster->y] = MONSTER;
 
 		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
-						new_fd, &num_fruits, &board);
+						new_fd);
+
+		num_players ++;
+
+		ManageFruits(&num_fruits, &num_players, &board);
 	}
+	
 
 	return (NULL);
 }

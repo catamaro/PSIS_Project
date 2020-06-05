@@ -218,18 +218,24 @@ void * threadReceive(void *arg){
 		{
 			case MONSTER:  
 				paint_monster(new_x,new_y, rgb->r,rgb->g, rgb->b); 
-				my_player->monster->x = new_x;
-				my_player->monster->y = new_y;
+				if(rgb->r == my_player->rgb->r && rgb->g == my_player->rgb->g && rgb->b == my_player->rgb->b){
+					my_player->monster->x = new_x;
+					my_player->monster->y = new_y;
+				}
 				break;
 			case PACMAN: 
 				paint_pacman(new_x,new_y, rgb->r,rgb->g, rgb->b); 
-				my_player->pacman->x = new_x;
-				my_player->pacman->y = new_y;
+				if(rgb->r == my_player->rgb->r && rgb->g == my_player->rgb->g && rgb->b == my_player->rgb->b){
+					my_player->pacman->x = new_x;
+					my_player->pacman->y = new_y;
+				}
 				break;	
 			case SUPERPACMAN: 
 				paint_powerpacman(new_x,new_y, rgb->r,rgb->g, rgb->b); 
-				my_player->pacman->x = new_x;
-				my_player->pacman->y = new_y;
+				if(rgb->r == my_player->rgb->r && rgb->g == my_player->rgb->g && rgb->b == my_player->rgb->b){
+					my_player->pacman->x = new_x;
+					my_player->pacman->y = new_y;
+				}
 				break;
 			case LEMON:    
 				paint_lemon(new_x,new_y); 

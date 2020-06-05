@@ -297,7 +297,7 @@ int send_score(int sock_fd, int player_id, int score){
 }
 
 void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
-					struct color *new_color, int *num_players, int new_fd, int *num_fruits, int ***board){
+					struct color *new_color, int *num_players, int new_fd){
 	struct player *new_player;
 
 	int err;
@@ -325,10 +325,6 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 		exit(EXIT_FAILURE);
 
 	printf("\nPlayer %d entered the game\n", *num_players);	
-
-	(*num_players) ++;
-
-	ManageFruits(num_fruits, num_players, board);
 
 	pthread_mutex_unlock(&mutex_insert_player);
 }
@@ -482,7 +478,6 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 		return;
 	if (*num_fruits == (*num_players - 1) * 2)
 		return;
-	if(pthread_mutex_trylock(&mutex_insert_player) == 0);
 	if (*num_fruits > (*num_players - 1) * 2)
 	{
 		do
@@ -525,8 +520,5 @@ void ManageFruits(int *num_fruits, int *num_players, int ***board)
 		broadcast_update(x, y, x, y, (*board)[x][y], NULL);
 
 	} while (*num_fruits < (*num_players - 1) * 2);		
-	
-	pthread_mutex_unlock(&mutex_insert_player);
-	printf("I live mutex\n");
 
 }

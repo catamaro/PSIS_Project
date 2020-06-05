@@ -25,7 +25,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb);
 int broadcast_score(int player_id, int score);
 int send_score(int sock_fd, int player_id, int score);
 void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
-					struct color *new_color, int *num_players, int new_fd, int *num_fruits, int ***board);
+					struct color *new_color, int *num_players, int new_fd);
 void init_insert_player_mutex();
 void destroy_insert_player_mutex();
 int **CheckInactivity(int **board);
