@@ -12,10 +12,20 @@
 #include <stdbool.h> 
 #include <unistd.h>
 
-#define LEFT 0
-#define RIGHT 1
-#define UP 2
-#define DOWN 3
+#define LEFT 10
+#define RIGHT 11
+#define UP 12
+#define DOWN 13
+
+#define EMPTY 0
+#define BRICK 1
+#define PACMAN 2
+#define MONSTER 3
+#define LEMON 4
+#define CHERRY 5
+#define SUPERPACMAN 6
+
+#define SCORE 7
 
 void * threadReceive(void *arg);
 void * threadSend(void *arg);

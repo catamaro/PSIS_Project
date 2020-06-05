@@ -24,7 +24,7 @@
 #define LEMON 4
 #define CHERRY 5
 #define SUPERPACMAN 6
-#define FRUIT 7
+#define SCORE 7
 #define MAX_PLAYERS_WAITING 5
 
 void * threadAccept(void *arg);
@@ -42,7 +42,9 @@ void checkRulesPacman(struct player* dealer, struct player* receiver, int x_new,
 void checkRulesSuperPacman(struct player* dealer, struct player* receiver, int x_new, int y_new,
 						int* x_new1, int* y_new1, int* x_new2, int* y_new2,
 							int* x_old1, int* y_old1, int* x_old2, int* y_old2);
-void ManageFruits();
 void clientDisconnect(int *sock_fd);
+
+void PrintPlayerScore();
+void ResetScore();
 
 #endif

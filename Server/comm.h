@@ -22,5 +22,15 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 int send_board_setup(int sock_fd);
 int broadcast_update(int x_new, int y_new, int x, int y, int character, struct color *new_color);
 int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb);
+int broadcast_score(int player_id, int score);
+int send_score(int sock_fd, int player_id, int score);
+void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
+					struct color *new_color, int *num_players, int new_fd);
+int get_insert_player_mutex();
+void init_insert_player_mutex();
+void destroy_insert_player_mutex();
+int **CheckInactivity(int **board);
+void ManageFruits(int *num_fruits, int *num_players, int ***board);
+
 
 #endif

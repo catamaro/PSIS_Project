@@ -96,11 +96,12 @@ int main(int argc, char* argv[]){
 				get_board_place(event.motion.x, event.motion.y, &x, &y);
 
 				if(x == last_x && y == last_y) continue;
-
-				err = send_event(PACMAN,  x,  y,  -1, my_player);
-				if(err == -1) exit(EXIT_FAILURE);
-				last_x = x;
-				last_y = y;
+				if( (abs(x - my_player->pacman->x) + abs(y - my_player->pacman->y) ) == 1){
+					err = send_event(PACMAN,  x,  y,  -1, my_player);
+					if(err == -1) exit(EXIT_FAILURE);
+					last_x = x;
+					last_y = y;
+				}
 			}
 			if(event.type == SDL_KEYDOWN){
 
@@ -125,6 +126,7 @@ int main(int argc, char* argv[]){
 	free(my_player->pacman);
 	free(my_player->rgb);
 	free(my_player);
+	free(IP);
 
 	close_board_windows();
 	return EXIT_SUCCESS;
@@ -137,7 +139,7 @@ void * threadReceive(void *arg){
 	struct init_msg_2 *message2 = malloc(sizeof(struct init_msg_2));
 	struct update_msg *message = malloc(sizeof(update_msg));
 	struct color *rgb = malloc(sizeof(color));
-	int new_x, new_y, character;
+	int new_x = 0, new_y = 0, character = 0;
 
 	while(!done){
 		// receive board info type 1 fruits and bricks 
@@ -148,11 +150,13 @@ void * threadReceive(void *arg){
 				close(my_player->sock_fd);
 				exit(EXIT_FAILURE);
 			}
+			printf("clt rcv init_msg %d byte %d %d %d\n", err, message2->character,message1->x,message1->y);
 			if(message1->character == -1){
 				board_load++;
 				free(message1);
 				continue;
 			}
+
 			character = message1->character;
 			new_x = message1->x;
 			new_y = message1->y;
@@ -165,12 +169,16 @@ void * threadReceive(void *arg){
 				close(my_player->sock_fd);
 				exit(EXIT_FAILURE);
 			}
+			
 			if(message2->character == -1){
 				board_load++;
 				printf("board load completed\n");
 				free(message2);
 				continue;
 			}
+			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, character,message2->x,message2->y, message2->r,  
+					message2->g,  message2->b);
+
 			character = message2->character;
 			new_x = message2->x;
 			new_y = message2->y;
@@ -186,9 +194,18 @@ void * threadReceive(void *arg){
 				close(my_player->sock_fd);
 				exit(EXIT_FAILURE);
 			}
-			//validate_msg();
 
-			clear_place(message->x, message->y);
+			if(message->character == SCORE){
+				printf("Player %d: %d points\n",message->x,message->y);
+				printf("clt rcv score %d byte %d %d\n", err, new_x,new_y);
+				continue;
+			} 
+
+			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, character,new_x,new_y, message->r,  
+					message->g,  message->b);
+
+			if(message->x > -1)
+                clear_place(message->x, message->y);
 			character = message->character;
 			new_x = message->new_x;
 			new_y = message->new_y;
@@ -223,9 +240,7 @@ void * threadReceive(void *arg){
 			case BRICK: 
 				paint_brick(new_x,new_y); 
 				break;
-		}
-				
-    	printf("received %d byte %d %d %d\n", err,character,new_x,new_y);
+		}				
 	}
 
 	free(message);

@@ -40,14 +40,15 @@ int send_board_setup(int sock_fd){
 		if(err == -1) return -1;
 	}
 
-	head = getFruitList();
+	/*head = getFruitList();
 	current = head;
-
+	
 	for (current = head; current != NULL; current = current->next)
 	{
+		
 		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
-	}
+	}*/
 	
 	// end of messages of type 1
 	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
@@ -150,19 +151,7 @@ int rcv_color(int sock_fd, color *new_color){
 
 	printf("\nsvr rcv color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
 	
-	return 0;
-	/*player_list = getPlayerList();
-	if (player_list == NULL) return 0; // there are no players
-
-	while(player_list != NULL && unique_color){
-		if(player_list->rgb->r == new_color->r && player_list->rgb->g == new_color->g && 
-			player_list->rgb->b == new_color->b) unique_color = false;
-		player_list = player_list->next;
-	}
-
-	if(!unique_color) return -1;
-	else return 0;*/
-	
+	return 0;	
 }
 
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
@@ -240,7 +229,7 @@ int broadcast_update(int x_new, int y_new, int x, int y, int character, struct c
 
 	return 0;
 }
-	
+
 int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struct color *rgb){
 	struct update_msg *message = malloc(sizeof(struct update_msg));
 	int err;
@@ -261,6 +250,37 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 		message->b = -1;
 	}
 	
+	err = write(sock_fd, message, sizeof(*message)); 
+	if(err <= 0){
+		perror("write: ");
+		close(sock_fd);
+		exit(EXIT_FAILURE);
+	}
+
+	return 0;
+}
+
+int broadcast_score(int player_id, int score){
+	struct player *head = getPlayerList();
+	struct player *current = head;
+	int err;
+	
+	for (current = head; current != NULL; current = current->next)
+	{
+		err = send_score(current->sock_fd, player_id, score);
+		if(err == -1) return -1;
+	}
+
+	return 0;
+}
+
+int send_score(int sock_fd, int player_id, int score){
+	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
+	int err;
+	
+	message->x = player_id;
+	message->y = score;
+	message->character = SCORE;
 
 	err = write(sock_fd, message, sizeof(*message)); 
 	if(err <= 0){
@@ -272,3 +292,234 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 	return 0;
 }
 
+
+pthread_mutex_t mutex_insert_player;
+
+void accept_client(int board_x, int board_y, struct position *pacman, struct position *monster, 
+					struct color *new_color, int *num_players, int new_fd){
+	struct player *new_player;
+
+	int err;
+
+	// paint both characters in server board
+	paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
+	paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
+
+	pthread_mutex_lock(&mutex_insert_player);
+
+	// add new player to player list
+	new_player = insertPlayer(pacman, monster, new_color, *num_players, new_fd);
+
+	// creeate thread for new client
+	pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)&(new_player->sock_fd));
+
+	// send board dimensions to new client
+	err = send_board_dim(board_x, board_y, new_player->sock_fd);
+	sleep(1);
+	if (err == -1)
+		exit(EXIT_FAILURE);
+
+	err = send_board_setup(new_player->sock_fd);
+	if (err == -1)
+		exit(EXIT_FAILURE);
+
+	printf("\nPlayer %d entered the game\n", *num_players);	
+
+	pthread_mutex_unlock(&mutex_insert_player);
+}
+
+int get_insert_player_mutex(){
+	int info_mutex = pthread_mutex_trylock(&mutex_insert_player);
+	return info_mutex;
+}
+
+void init_insert_player_mutex(){
+	pthread_mutex_init(&mutex_insert_player, NULL);
+}
+
+void destroy_insert_player_mutex(){
+	pthread_mutex_destroy(&mutex_insert_player);
+}
+	
+int** CheckInactivity(int **board)
+{
+	//start from the first link
+	struct player *current = getPlayerList();
+
+	if (current == NULL)
+		return board;
+	
+	if(pthread_mutex_trylock(&mutex_insert_player) == 0){
+
+		//navigate through list
+		while (current)
+		{		
+			//if it is last player
+			if (current->next == NULL)
+			{
+
+				if (current->inactive_time_pacman >= (1000 * 30))
+				{
+					// Pacman Inativo
+					int x, y, x_old, y_old;
+					RandomPositionRules(&x, &y);
+					x_old = current->pacman->x;
+					y_old = current->pacman->y;
+					board[x_old][y_old] = EMPTY;
+					clear_place(x_old, y_old);
+					current->pacman->x = x;
+					current->pacman->y = y;
+
+					if (current->times < 1)
+					{
+						board[x][y] = PACMAN;
+						paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+						broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
+						
+					}
+					else
+					{
+						board[x][y] = SUPERPACMAN;
+						paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+						broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
+					}
+					current->inactive_time_pacman = 0;
+				}
+				else
+				{
+					current->inactive_time_pacman = current->inactive_time_pacman + 1000;
+				}
+				if (current->inactive_time_monster >= (1000 * 30))
+				{
+					// Monstro Inativo
+					int x, y, x_old, y_old;
+					RandomPositionRules(&x, &y);
+					x_old = current->monster->x;
+					y_old = current->monster->y;
+					board[x_old][y_old] = EMPTY;
+					clear_place(x_old, y_old);
+					current->monster->x = x;
+					current->monster->y = y;
+					board[x][y] = MONSTER;
+					paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
+					current->inactive_time_monster = 0;
+				}
+				else
+				{
+					current->inactive_time_monster = current->inactive_time_monster + 1000;
+				}
+				current = current->next;
+				break;
+			}
+			else
+			{
+				if (current->inactive_time_pacman >= (1000 * 3))
+				{
+					// Pacman Inativo
+					int x, y, x_old, y_old;
+					RandomPositionRules(&x, &y);
+					x_old = current->pacman->x;
+					y_old = current->pacman->y;
+					board[x_old][y_old] = EMPTY;
+					clear_place(x_old, y_old);
+					current->pacman->x = x;
+					current->pacman->y = y;
+					if (current->times < 1)
+					{
+						board[x][y] = PACMAN;
+						paint_pacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+						broadcast_update(x, y, x_old, y_old, PACMAN, current->rgb);
+					}
+					else
+					{
+						board[x][y] = SUPERPACMAN;
+						paint_powerpacman(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+						broadcast_update(x, y, x_old, y_old, SUPERPACMAN, current->rgb);
+					}
+					current->inactive_time_pacman = 0;
+				}
+				else
+				{
+					current->inactive_time_pacman = current->inactive_time_pacman + 1000;
+				}
+				if (current->inactive_time_monster >= (1000 * 3))
+				{
+					// Monstro Inativo
+					int x, y, x_old, y_old;
+					RandomPositionRules(&x, &y);
+					x_old = current->monster->x;
+					y_old = current->monster->y;
+					board[x_old][y_old] = EMPTY;
+					clear_place(x_old, y_old);
+					current->monster->x = x;
+					current->monster->y = y;
+					board[x][y] = MONSTER;
+					paint_monster(x, y, current->rgb->r, current->rgb->g, current->rgb->b);
+					broadcast_update(x, y, x_old, y_old, MONSTER, current->rgb);
+					current->inactive_time_monster = 0;
+				}
+				else
+				{
+					current->inactive_time_monster = current->inactive_time_monster + 1000;
+				}
+				current = current->next;
+			}
+		}
+	}
+	pthread_mutex_unlock(&mutex_insert_player);
+
+	return board;
+}
+
+void ManageFruits(int *num_fruits, int *num_players, int ***board)
+{
+
+	if (*num_players <= 1)
+		return;
+	if (*num_fruits == (*num_players - 1) * 2)
+		return;
+	while(pthread_mutex_trylock(&mutex_insert_player) != 0);
+	if (*num_fruits > (*num_players - 1) * 2)
+	{
+		do
+		{
+			int x, y;
+			FetchFruitHeadCoords(&x, &y);
+			RemoveFruitHead();
+
+			clear_place(x, y);
+			(*board)[x][y] = 0;
+			(*num_fruits)--;
+			broadcast_update(x, y, x, y, (*board)[x][y], NULL);
+			
+		} while (*num_fruits > (*num_players - 1) * 2);
+
+		pthread_mutex_unlock(&mutex_insert_player);
+		return;
+	}
+	do
+	{
+		int x, y;
+		RandomPositionRules(&x, &y);
+
+		int fruit = rand() % (CHERRY + 1 - LEMON) + LEMON;
+		AddPosHead(x, y, fruit);
+
+		(*num_fruits)++;
+		if (fruit == LEMON)
+		{
+			(*board)[x][y] = LEMON;
+			paint_lemon(x, y);
+		}
+		else if (fruit == CHERRY)
+		{
+			(*board)[x][y] = CHERRY;
+			paint_cherry(x, y);
+		}
+		broadcast_update(x, y, x, y, (*board)[x][y], NULL);
+
+	} while (*num_fruits < (*num_players - 1) * 2);		
+	
+	pthread_mutex_unlock(&mutex_insert_player);
+}

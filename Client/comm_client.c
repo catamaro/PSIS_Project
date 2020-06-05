@@ -1,4 +1,5 @@
 #include "structs.h"
+#include "client.h"
 #include "comm.h"
 
 int rcv_board_dim(int sock_fd, int *board_x, int *board_y){

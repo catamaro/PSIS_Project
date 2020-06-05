@@ -3,14 +3,6 @@
 
 #include <pthread.h>
 
-#define EMPTY 0
-#define BRICK 1
-#define PACMAN 2
-#define MONSTER 3
-#define LEMON 4
-#define CHERRY 5
-#define SUPERPACMAN 6
-
 typedef struct update_msg{
   int character; 
   int x;

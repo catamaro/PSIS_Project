@@ -63,7 +63,7 @@ int length(int type)
    struct pos_list *current;
    struct pos_list *head;
 
-   if(type == FRUIT) head = fruitHead;
+   if(type == CHERRY || type == LEMON) head = fruitHead;
    else if(type == BRICK) head= brickHead;
    else{
 
@@ -172,6 +172,10 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
       link->sock_fd = fd;
       link->times = 0;
       link->next = NULL;
+      link->pacman_tokens = 2;
+      link->monster_tokens = 2;
+      link->inactive_time_pacman = 0;
+      link->inactive_time_monster = 0;
 
       //point it to old first player
       link->next = playerHead;
@@ -201,6 +205,10 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
          link->sock_fd = fd;
          link->times = 0;
          link->next = NULL;
+         link->pacman_tokens = 2;
+         link->monster_tokens = 2;
+         link->inactive_time_pacman = 0;
+         link->inactive_time_monster = 0;
 
          return link;
       }
@@ -218,6 +226,10 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
    link->id = player_id;
    link->sock_fd = fd;
    link->times = 0;
+   link->pacman_tokens = 2;
+   link->monster_tokens = 2;
+   link->inactive_time_pacman = 0;
+   link->inactive_time_monster = 0;
 
    if (current->next == NULL)
    {

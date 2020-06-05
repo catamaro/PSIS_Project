@@ -52,6 +52,12 @@ typedef struct player
   struct color *rgb;
   int times;
   int score;
+  
+  unsigned int inactive_time_pacman;
+  unsigned int inactive_time_monster;
+
+  int pacman_tokens;
+  int monster_tokens;
 
   struct position *pacman;
   struct position *monster;
