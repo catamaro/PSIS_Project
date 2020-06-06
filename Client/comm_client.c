@@ -15,8 +15,8 @@ int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
 
     printf("clt rcv board size: %d %d\n", board_dim->x, board_dim->y);
 
-	*board_x = board_dim->x;
-	*board_y = board_dim->y;
+	*board_x = board_dim->y;
+	*board_y = board_dim->x;
 
 	//free(board_dim);
 
