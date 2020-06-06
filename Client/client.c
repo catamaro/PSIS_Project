@@ -153,6 +153,7 @@ void * threadReceive(void *arg){
 				exit(EXIT_FAILURE);
 			}
 			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->new_x,message1->new_y);
+
 			if(message1->character == -1){
 				board_load++;
 				free(message1);
@@ -184,6 +185,7 @@ void * threadReceive(void *arg){
 			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, message2->character,message2->new_x,message2->new_y, message2->r,  
 					message2->g,  message2->b);
 
+
 			character = message2->character;
 			new_x = message2->new_x;
 			new_y = message2->new_y;
@@ -210,6 +212,7 @@ void * threadReceive(void *arg){
 
 			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, message->character,message->new_x,message->new_y, message->r,  
 					message->g,  message->b);
+
 
 			if(message->x != -1)
 				clear_place(message->x, message->y);
