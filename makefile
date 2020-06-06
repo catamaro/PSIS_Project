@@ -34,4 +34,4 @@ UI_library.o: UI_library/UI_library.c UI_library/UI_library.h
 	gcc -c UI_library/UI_library.c $(LFLAGS) $(LDLIBS)
 
 clean:
-	rm -f *.o *.~ server *.~ client
+	rm -f *.o *.~ server *.~ client *.~list_handler *.~comm_client *.~comm_server *.~game_rules *.~UI_library
