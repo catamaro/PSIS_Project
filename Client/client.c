@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
 			}
 			//when the mouse mooves the monster also moves
 			if(event.type == SDL_MOUSEMOTION){
-				get_board_place(event.motion.x, event.motion.y, &x, &y);
+				get_board_place(event.motion.y, event.motion.x, &y, &x);
 
 				if(x == last_x && y == last_y) continue;
 				if( (abs(x - my_player->pacman->x) + abs(y - my_player->pacman->y) ) == 1){
@@ -135,7 +135,7 @@ void * threadReceive(void *arg){
 	struct player *my_player = (player*) arg;
 	struct init_msg_1 *message1 = malloc(sizeof(struct init_msg_1));
 	struct init_msg_2 *message2 = malloc(sizeof(struct init_msg_2));
-	struct update_msg *message = malloc(sizeof(update_msg));
+	struct update_msg *message = malloc(sizeof(struct update_msg));
 	struct color *rgb = malloc(sizeof(color));
 	int new_x = 0, new_y = 0, character = 0;
 
@@ -152,7 +152,7 @@ void * threadReceive(void *arg){
 				free(rgb);
 				exit(EXIT_FAILURE);
 			}
-			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->x,message1->y);
+			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->new_x,message1->new_y);
 			if(message1->character == -1){
 				board_load++;
 				free(message1);
@@ -160,8 +160,8 @@ void * threadReceive(void *arg){
 			}
 
 			character = message1->character;
-			new_x = message1->x;
-			new_y = message1->y;
+			new_x = message1->new_x;
+			new_y = message1->new_y;
 		}
 		// receive board info type 1 pacman and monster
 		else if(board_load == 1){
@@ -181,12 +181,12 @@ void * threadReceive(void *arg){
 				free(message2);
 				continue;
 			}
-			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, message2->character,message2->x,message2->y, message2->r,  
+			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, message2->character,message2->new_x,message2->new_y, message2->r,  
 					message2->g,  message2->b);
 
 			character = message2->character;
-			new_x = message2->x;
-			new_y = message2->y;
+			new_x = message2->new_x;
+			new_y = message2->new_y;
 			rgb->r = message2->r;
 			rgb->g = message2->g;
 			rgb->b = message2->b;
@@ -203,12 +203,12 @@ void * threadReceive(void *arg){
 			}
 
 			if(message->character == SCORE){
-				printf("Player %d: %d points\n",message->x,message->y);
+				printf("Player %d: %d points\n",message->new_x,message->new_y);
 				printf("clt rcv score %d byte %d %d\n", err, new_x,new_y);
 				continue;
 			} 
 
-			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, character,new_x,new_y, message->r,  
+			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, message->character,message->new_x,message->new_y, message->r,  
 					message->g,  message->b);
 
 			if(message->x != -1)

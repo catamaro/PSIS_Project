@@ -781,8 +781,8 @@ int** loadBoard(char *arg, int *x, int *y){
 		exit(EXIT_FAILURE);
 	}
 
-if(board_x*board_y < 8)   
-{
+	if(board_x*board_y < 8)   
+	{
 	printf("Please give a bigger board (with at least 8 empty blocks).\n");
 		fclose(fp);
 		exit(EXIT_FAILURE);
@@ -796,7 +796,7 @@ if(board_x*board_y < 8)
 		board[i] = board[i - 1] + board_y;
 
 	//creates a windows and a board
-	create_board_window(board_y, board_x);
+	create_board_window(board_x, board_y);
 
 	// Consume first line, that is correct due to previous fscanf
 	read = getline(&line, &len, fp);
@@ -821,9 +821,9 @@ if(board_x*board_y < 8)
 			// If there is a brick, store in board
 			if (line[j] == 'B')
 			{
-				board[j][i] = 1;
-				paint_brick(j, i);
-				AddPosHead(j, i, BRICK);
+				board[i][j] = 1;
+				paint_brick(i, j);
+				AddPosHead(i, j, BRICK);
 				(*bricks)++;
 			}
 		}

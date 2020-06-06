@@ -6,6 +6,7 @@
 
 pthread_mutex_t run_insert_player = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t run_rcv_event = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t run_snd_event = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_cond_t run_cond = PTHREAD_COND_INITIALIZER;
 int run_thread = 0;
@@ -22,6 +23,7 @@ void sigHandler(int sig){
 	closeFd();
 
 	destroy_insert_player_mutex();
+	destroy_run_rcv_event();
 
 	exit(EXIT_FAILURE);
 }
@@ -45,7 +47,7 @@ int send_board_dim(int x, int y, int sock_fd){
     return 0;
 }
 
-int send_board_setup(int sock_fd){
+int send_board_setup(struct player *new_player){
 	struct pos_list *head = getBrickList();
 	struct pos_list *current = head;
 	struct player *headPlayer = getPlayerList();
@@ -54,7 +56,7 @@ int send_board_setup(int sock_fd){
 
 	for (current = head; current != NULL; current = current->next)
 	{
-		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
+		err = send_init_msg(new_player->sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
 	}
 
@@ -63,30 +65,34 @@ int send_board_setup(int sock_fd){
 
 	for (current = head; current != NULL; current = current->next)
 	{
-		err = send_init_msg(sock_fd, current->character, current->x, current->y, NULL);
+		err = send_init_msg(new_player->sock_fd, current->character, current->x, current->y, NULL);
 		if(err == -1) return -1;
 	}
 
 	// end of messages of type 1
-	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
+	err = send_init_msg(new_player->sock_fd, -1, -1, -1, NULL);
 	if(err == -1) return -1;
 
 	for (currentPlayer = headPlayer; currentPlayer != NULL; currentPlayer = currentPlayer->next)
 	{
+		if(new_player != currentPlayer){
+			err = send_init_msg(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, new_player->rgb);
+			if(err == -1) return -1;
+		} 
 
-		err = send_init_msg(sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
+		err = send_init_msg(new_player->sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
 		if(err == -1) return -1;
 
 		if(currentPlayer->times == 0)
-			err = send_init_msg(sock_fd, PACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
+			err = send_init_msg(new_player->sock_fd, PACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
 		else
-			err = send_init_msg(sock_fd, SUPERPACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
+			err = send_init_msg(new_player->sock_fd, SUPERPACMAN, currentPlayer->pacman->x, currentPlayer->pacman->y, currentPlayer->rgb);
 
 		if(err == -1) return -1;
 	}
 
 	// end of messages of type 2
-	err = send_init_msg(sock_fd, -1, -1, -1, NULL);
+	err = send_init_msg(new_player->sock_fd, -1, -1, -1, NULL);
 	if(err == -1) return -1;
 
 	return 0;
@@ -94,6 +100,7 @@ int send_board_setup(int sock_fd){
 
 int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 	int err;
+	
 
 	if (type == PACMAN || type == MONSTER || type == SUPERPACMAN){
 		struct init_msg_2 *message = malloc(sizeof(struct init_msg_2));
@@ -101,8 +108,8 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		message->g = rgb->g;
 		message->b = rgb->b;
 		message->character = type;
-		message->x = x;
-		message->y = y;
+		message->new_x = x;
+		message->new_y = y;
 
 		err = write(sock_fd, message, sizeof(*message));
 		if(err <= 0){
@@ -110,14 +117,14 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->x, message->y,
+		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->new_x, message->new_y,
 					message->r, message->g, message->b);
 	}
 	else{
 		struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 		message->character = type;
-		message->x = x;
-		message->y = y;
+		message->new_x = x;
+		message->new_y = y;
 
 		err = write(sock_fd, message, sizeof(*message));
 		if(err <= 0){
@@ -125,7 +132,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		printf("\nsvr snd initial positions: %d %d\n", message->x, message->y);
+		printf("\nsvr snd initial positions: %d %d\n", message->new_x, message->new_y);
 	}
 
 
@@ -175,11 +182,11 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	if(message->character == PACMAN){
 		*type = PACMAN;
 
-		printf("svr rcv event: %d %d %d\n", message->character, message->x, message->y);
+		printf("svr rcv event: %d %d %d\n", message->character, message->new_x, message->new_y);
 
 		// store new position in motion
-		new_position->x = message->x;
-		new_position->y = message->y;
+		new_position->x = message->new_x;
+		new_position->y = message->new_y;
 		// store previous position in user data
 		new_event->user.data1 = list;
 		new_event->user.data2 = new_position;
@@ -187,11 +194,11 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	else if(message->character == MONSTER){
 		*type = MONSTER;
 
-		printf("svr rcv event: %d %d\n", message->character, message->x);
+		printf("svr rcv event: %d %d\n", message->character, message->new_x);
 
 		new_x = list->monster->x;
 		new_y = list->monster->y;
-		dir = message->x;
+		dir = message->new_x;
 
 		switch (dir)
 		{
@@ -217,12 +224,14 @@ int broadcast_update(int x_new, int y_new, int x, int y, int character, struct c
 	struct player *current = head;
 	int err;
 
+	pthread_mutex_lock(&run_snd_event);
+
 	for (current = head; current != NULL; current = current->next)
 	{
-		printf("id: %d type:%d x:%d y:%d\n", current->id, character, x, y);
 		err = send_update(current->sock_fd, character, x, y, x_new, y_new, rgb);
 		if(err == -1) return -1;
 	}
+	pthread_mutex_unlock(&run_snd_event);
 
 	return 0;
 }
@@ -253,6 +262,9 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
+	printf("\nsvr snd update position: %d %d %d %d %d\n", message->new_x, message->new_y,
+					message->r, message->g, message->b);
+
 
 	return 0;
 }
@@ -262,11 +274,16 @@ int broadcast_score(int player_id, int score){
 	struct player *current = head;
 	int err;
 
+	pthread_mutex_lock(&run_snd_event);
+
 	for (current = head; current != NULL; current = current->next)
 	{
 		err = send_score(current->sock_fd, player_id, score);
 		if(err == -1) return -1;
 	}
+
+	pthread_mutex_unlock(&run_snd_event);
+
 	return 0;
 }
 
@@ -274,8 +291,8 @@ int send_score(int sock_fd, int player_id, int score){
 	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 	int err;
 
-	message->x = player_id;
-	message->y = score;
+	message->new_x = player_id;
+	message->new_y = score;
 	message->character = SCORE;
 
 	err = write(sock_fd, message, sizeof(*message));
@@ -297,25 +314,25 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 	run_thread = 0;
 	// locks the thread for other threads
 	pthread_mutex_lock(&run_insert_player);
+
 	// add new player to player list
 	new_player = insertPlayer(pacman, monster, new_color, *num_players, new_fd);
 
 	// creeate thread for new client
 	pthread_create(&(new_player->thread_id), NULL, threadClient, (void *)new_player);
 	pthread_create(&(new_player->time_id), NULL, threadClientTime, (void *)new_player);
+
 	// send board dimensions to new client
 	err = send_board_dim(board_x, board_y, new_player->sock_fd);
 	if (err == -1)
 		exit(EXIT_FAILURE);
 
-	err = send_board_setup(new_player->sock_fd);
+	err = send_board_setup(new_player);
 	if (err == -1)
 		exit(EXIT_FAILURE);
 
-	broadcast_update(pacman->x, pacman->y, pacman->x, pacman->y, PACMAN, new_color);
-	broadcast_update(monster->x, monster->y, monster->x, monster->y, MONSTER, new_color);
-
 	printf("\nPlayer %d entered the game\n", *num_players);
+
 
     //pthread_cond_signal(&run_cond);
 	pthread_mutex_unlock(&run_insert_player);
@@ -356,7 +373,6 @@ int** CheckInactivity(int **board, struct player *my_player)
 	}
 	else
 	{
-		printf("time: %d\n", my_player->inactive_time_pacman);
 		my_player->inactive_time_pacman = my_player->inactive_time_pacman + 1000;
 	}
 
@@ -380,7 +396,6 @@ int** CheckInactivity(int **board, struct player *my_player)
 	}
 	else
 	{
-		printf("time: %d\n", my_player->inactive_time_monster);
 		my_player->inactive_time_monster = my_player->inactive_time_monster + 1000;
 	}
 
@@ -397,4 +412,18 @@ void destroy_insert_player_mutex(){
 	pthread_mutex_destroy(&run_insert_player);
 }
 
+void init_run_rcv_event(){
+	pthread_mutex_init(&run_rcv_event, NULL);
+}
 
+void destroy_run_rcv_event(){
+	pthread_mutex_destroy(&run_rcv_event);
+}
+
+void init_run_snd_event(){
+	pthread_mutex_init(&run_snd_event, NULL);
+}
+
+void destroy_run_snd_event(){
+	pthread_mutex_destroy(&run_snd_event);
+}

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58001);
+	local_addr.sin_port = htons(5800);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
@@ -69,7 +69,10 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	// initialization of the mutex
 	init_insert_player_mutex();
+	init_run_rcv_event();
+	init_run_snd_event();
 
 	// create sig action for ctrl+c
 	struct sigaction sa;
@@ -88,7 +91,7 @@ int main(int argc, char *argv[])
 	fruit_update_time = SDL_GetTicks();
 	unsigned int score_update_time = SDL_GetTicks();
 
-
+	// main loop that processes the events
 	while (!done)
 	{
 		SDL_Delay(20);
@@ -235,12 +238,12 @@ void *threadAccept(void *arg)
 	socklen_t size_addr = sizeof(client_addr);
 	int new_fd;
 	size_t err;
-
+	
 	while (!done)
 	{
-		struct color *new_color = malloc(sizeof(color));
-		struct position *pacman = malloc(sizeof(position));
-		struct position *monster = malloc(sizeof(position));
+		struct position *pacman = malloc(sizeof(struct position));
+		struct color *new_color = malloc(sizeof(struct color));
+		struct position *monster = malloc(sizeof(struct position));
 
 		printf("waiting for players\n");
 		new_fd = accept(server_fd,
@@ -272,8 +275,8 @@ void *threadAccept(void *arg)
 		board[pacman->x][pacman->y] = PACMAN;
 		board[monster->x][monster->y] = MONSTER;
 		// paint both characters in server board
-		paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
-		paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
+		paint_pacman((pacman)->x, (pacman)->y, (new_color)->r, (new_color)->g, (new_color)->b);
+		paint_monster((monster)->x, (monster)->y, (new_color)->r, (new_color)->g, (new_color)->b);
 
 		num_players ++;
 
@@ -281,6 +284,8 @@ void *threadAccept(void *arg)
 
 		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
 						new_fd);
+		//broadcast_update((pacman)->x, (pacman)->y, pacman->x, (pacman)->y, PACMAN, new_color);
+		//broadcast_update((monster)->x, (monster)->y, (monster)->x, (monster)->y, MONSTER, new_color);
 	}
 	
 

@@ -5,21 +5,21 @@
 
 typedef struct update_msg{
   int character; 
-  int x;
-  int y;
   int new_x;
   int new_y;
   int r;
   int g;
   int b;
+  int x;
+  int y;
 } update_msg;
 
 // message when new player connects for fruits and bricks
 typedef struct init_msg_1
 {
   int character;
-  int x;
-  int y;
+  int new_x;
+  int new_y;
 } init_msg_1;
 
 // message when new player connects for pacman and monster
@@ -27,8 +27,8 @@ typedef struct init_msg_1
 typedef struct init_msg_2
 {
   int character;
-  int x;
-  int y;
+  int new_x;
+  int new_y;
   int r;
   int g;
   int b;
