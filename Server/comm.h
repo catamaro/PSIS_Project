@@ -18,7 +18,7 @@ int send_board_dim(int x, int y, int sock_fd);
 int rcv_color(int sock_fd, color *new_color);
 int rcv_event(int sock_fd, SDL_Event *new_event, int *type);
 int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struct color *rgb);
-int send_board_setup(int sock_fd);
+int send_board_setup(struct player *new_player);
 int broadcast_update(int x_new, int y_new, int x, int y, int character, struct color *new_color);
 int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb);
 int broadcast_score(int player_id, int score);
@@ -30,5 +30,9 @@ int **CheckInactivity(int **board, struct player *my_player);
 void sigHandler(int sig);
 void init_insert_player_mutex();
 void destroy_insert_player_mutex();
+void init_run_rcv_event();
+void destroy_run_rcv_event();
+void init_run_snd_event();
+void destroy_run_snd_event();
 
 #endif

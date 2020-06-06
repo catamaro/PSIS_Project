@@ -7,33 +7,33 @@
 typedef struct update_msg
 {
   int character;
-  int x;
-  int y;
   int new_x;
   int new_y;
   int r;
   int g;
   int b;
-} update_msg;
-
-// message when new player connects for fruits and bricks
-typedef struct init_msg_1
-{
-  int character;
   int x;
   int y;
-} init_msg_1;
+} update_msg;
 
 // message when new player connects for pacman and monster
 typedef struct init_msg_2
 {
   int character;
-  int x;
-  int y;
+  int new_x;
+  int new_y;
   int r;
   int g;
   int b;
 } init_msg_2;
+
+// message when new player connects for fruits and bricks
+typedef struct init_msg_1
+{
+  int character;
+  int new_x;
+  int new_y;
+} init_msg_1;
 
 // rgb code for pacman and monster
 typedef struct color
