@@ -32,7 +32,6 @@ void * threadAccept(void *arg);
 void * threadClient(void *arg);
 void *threadClientTime(void *arg);
 
-void clientDisconnect(int sock_fd);
 void PrintPlayerScore();
 
 void ResetScore();

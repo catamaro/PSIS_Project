@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58000);
+	local_addr.sin_port = htons(58001);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
@@ -308,7 +308,8 @@ void *threadClient(void *arg)
 		err = rcv_event(sock_fd, &new_event, &character);
 		if (err == -1)
 		{
-			clientDisconnect(my_player->id);
+			clientDisconnect(my_player->id, &num_players, &board);
+
 			return(NULL);
 		}
 		if (character == MONSTER) new_event.type = Event_MoveMonster;
@@ -348,38 +349,6 @@ void *threadClientTime(void *arg)
 	return (NULL);
 }
 
-void clientDisconnect(int id)
-{
-	int x1, y1, x2, y2;
-	struct player *remove_player = findPlayer(id);
-
-	printf("Player: %d has disconnected\n", remove_player->id);
-
-	x1 = remove_player->monster->x;
-	y1 = remove_player->monster->y;
-
-	board[x1][y1] = EMPTY;
-	clear_place(x1, y1);
-
-	x2 = remove_player->pacman->x;
-	y2 = remove_player->pacman->y;
-
-	board[x2][y2] = EMPTY;
-	clear_place(x2, y2);
-
-	deletePlayer(remove_player->id);
-	
-	broadcast_update(x1, y1, x1, y1, board[x1][y1], NULL);
-	broadcast_update(x2, y2, x2, y2, board[x2][y2], NULL);
-
-	num_players--;
-	if(num_players == 1) ResetScore();
-	ManageFruits();
-
-	pthread_cancel(remove_player->time_id);
-	pthread_cancel(remove_player->thread_id);
-
-}
 
 void PrintPlayerScore()
 {

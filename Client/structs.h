@@ -49,6 +49,7 @@ typedef struct player{
   int id;
   int sock_fd;
   struct color *rgb;
+  pthread_t thread_id;
 
   struct position * pacman;
   struct position * monster;

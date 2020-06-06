@@ -57,9 +57,12 @@ int main(int argc, char* argv[]){
 		}
 	}
 
+	/****** BEGIN OF SETUP ******/
+
+	// setup of server - creation of client socket
 	my_player->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(my_player->sock_fd == -1){
-		perror("socket: ");
+		perror("socket ");
 		exit(EXIT_FAILURE);
 	}
 		
@@ -67,22 +70,21 @@ int main(int argc, char* argv[]){
 	server_addr.sin_port = htons(port);
 	int err = inet_aton(IP, &server_addr.sin_addr);
 	if(err == 0){
-		perror("aton: ");
+		perror("aton ");
 		exit(EXIT_FAILURE);
 	}
-
+	// setup of server - creation of server connection to server
 	err = connect(my_player->sock_fd, (const struct sockaddr *)&server_addr,
 						sizeof(server_addr));
 
 	if(err == -1){
-		perror("bind: ");
+		perror("conection ");
 		exit(EXIT_FAILURE);
 	}
 	printf("just connected to the server \n\n");
+
 	
-	//receive and send thread id
-	pthread_t receive_id;
-	
+	// client initial messages
 	err = send_color(my_player->sock_fd, my_player->rgb);
 	if(err == -1) exit(EXIT_FAILURE);
 
@@ -92,8 +94,12 @@ int main(int argc, char* argv[]){
 	create_board_window(board_x, board_y);
 
 	//receives messages from server
-	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
-	
+	pthread_create(&(my_player->thread_id), NULL, threadReceive, (void *)my_player);
+
+	/****** END OF SETUP ******/
+
+
+	// main thread send messages to server 
 	int x = 0, y = 0;
 	while(!done){
 		while (SDL_PollEvent(&event)) {
@@ -142,6 +148,7 @@ int main(int argc, char* argv[]){
 	return EXIT_SUCCESS;
 }
 
+// thread that receives messages from server
 void * threadReceive(void *arg){
 	int err;
 	struct player *my_player = (player*) arg;
@@ -205,7 +212,7 @@ void * threadReceive(void *arg){
 		else if(board_load == 2){
 			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
 			if(err == 0){
-				perror("server has ended connection\n");
+				printf("server has ended connection\n");
 				serverClosed(my_player);
 				free(message);
 				free(rgb);
@@ -232,7 +239,7 @@ void * threadReceive(void *arg){
 			rgb->g = message->g;
 			rgb->b = message->b;
 		}
-			
+		
 		switch (character)
 		{
 			case MONSTER:  

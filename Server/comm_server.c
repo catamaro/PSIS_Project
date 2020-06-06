@@ -161,8 +161,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	struct position *new_position = malloc(sizeof(struct position));
 	struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 
-	//while(!run_thread2);
-
 	pthread_mutex_lock(&run_rcv_event);
 
 	err = recv(sock_fd, message , sizeof(*message), 0);
@@ -396,6 +394,48 @@ int** CheckInactivity(int **board, struct player *my_player)
 	pthread_mutex_unlock(&run_rcv_event);
 
 	return board;
+}
+
+
+void clientDisconnect(int id, int *num_players, int ***board)
+{
+	int x1, y1, x2, y2;
+	struct player *remove_player = findPlayer(id);
+
+	pthread_mutex_lock(&run_snd_event);
+	pthread_mutex_lock(&run_insert_player);
+
+
+	printf("Player: %d has disconnected\n", remove_player->id);
+
+	x1 = remove_player->monster->x;
+	y1 = remove_player->monster->y;
+
+	(*board)[x1][y1] = EMPTY;
+	clear_place(x1, y1);
+
+	x2 = remove_player->pacman->x;
+	y2 = remove_player->pacman->y;
+
+	(*board)[x2][y2] = EMPTY;
+	clear_place(x2, y2);
+
+
+	deletePlayer(remove_player->id);
+
+	pthread_mutex_unlock(&run_snd_event);
+	pthread_mutex_unlock(&run_insert_player);
+	
+	broadcast_update(x1, y1, x1, y1, (*board)[x1][y1], NULL);
+	broadcast_update(x2, y2, x2, y2, (*board)[x2][y2], NULL);
+
+	(*num_players)--;
+	if(*num_players == 1) ResetScore();
+	ManageFruits();
+
+	pthread_cancel(remove_player->time_id);
+	pthread_cancel(remove_player->thread_id);
+
 }
 
 void init_insert_player_mutex(){
