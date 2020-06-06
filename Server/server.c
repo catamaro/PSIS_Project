@@ -15,6 +15,7 @@ int **board;
 int done = 0;
 
 unsigned int fruit_update_time;
+unsigned int score_update_time;
 unsigned int Event_MovePacman = 0;
 unsigned int Event_MoveMonster = 1;
 
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
 	struct position *new_position;
 
 	fruit_update_time = SDL_GetTicks();
-	unsigned int score_update_time = SDL_GetTicks();
+	score_update_time = SDL_GetTicks();
 
 	// main loop that processes the events
 	while (!done)
@@ -278,12 +279,15 @@ void *threadAccept(void *arg)
 		paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
 		paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
 
+		if(num_players == 1) score_update_time = SDL_GetTicks();
+
 		num_players ++;
 
 		ManageFruits();
 
 		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
 						new_fd);
+						
 	}
 	
 
