@@ -82,7 +82,7 @@ int length(int type)
    return length;
 }
 //find a link with given player
-struct player *findPlayer(int sock_fd)
+struct player *findPlayer(int id)
 {
    //start from the first link
    struct player *current = playerHead;
@@ -94,7 +94,7 @@ struct player *findPlayer(int sock_fd)
    }
 
    //navigate through list
-   while (current->sock_fd != sock_fd)
+   while (current->id != id)
    {
 
       //if it is last player
@@ -176,6 +176,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
       link->monster_tokens = 2;
       link->inactive_time_pacman = 0;
       link->inactive_time_monster = 0;
+      link->score = 0;
 
       //point it to old first player
       link->next = playerHead;
@@ -209,6 +210,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
          link->monster_tokens = 2;
          link->inactive_time_pacman = 0;
          link->inactive_time_monster = 0;
+         link->score = 0;
 
          return link;
       }
@@ -230,6 +232,7 @@ player * insertPlayer(struct position *pos1, struct position *pos2, struct color
    link->monster_tokens = 2;
    link->inactive_time_pacman = 0;
    link->inactive_time_monster = 0;
+   link->score = 0;
 
    if (current->next == NULL)
    {

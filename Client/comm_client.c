@@ -54,7 +54,6 @@ int send_event(int type, int new_x, int new_y, int dir, struct player *my_player
 			close(my_player->sock_fd);
 			return -1;
 		} 
-		printf("clt snd update_msg: %d %d %d\n", new_event->character, new_event->x, new_event->y);
 	}
 	
 	else if(type == MONSTER){
@@ -69,7 +68,6 @@ int send_event(int type, int new_x, int new_y, int dir, struct player *my_player
 			close(my_player->sock_fd);
 			return -1;
 		} 
-		printf("clt snd update_msg: %d %d\n", new_event->character, new_event->x);
 	}
 	return 0;
 }
