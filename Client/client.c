@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
 	my_player->rgb = malloc(sizeof(struct color));
 
 	if(argc != 6){
-		printf("error: invalid parameters [IP] [Port] [r] [g] [b]");
+		printf("error: invalid parameters [IP] [Port] [r] [g] [b]\n");
 		exit(EXIT_FAILURE);
 	}
 	else{
@@ -35,12 +35,24 @@ int main(int argc, char* argv[]){
 			printf("error: argv[3] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
+		if(my_player->rgb->r > 250 || my_player->rgb->r < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
+			exit(EXIT_FAILURE);
+		}
 		if(sscanf(argv[4], "%d", &(my_player->rgb->g)) != 1){
 			printf("error: argv[4] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
+		if(my_player->rgb->g > 250 || my_player->rgb->g < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
+			exit(EXIT_FAILURE);
+		}
 		if(sscanf(argv[5], "%d", &(my_player->rgb->b)) != 1){
 			printf("error: argv[5] is not a number\n");
+			exit(EXIT_FAILURE);
+		}
+		if(my_player->rgb->b > 250 || my_player->rgb->b < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -192,11 +204,15 @@ void * threadReceive(void *arg){
 		// receive board position update
 		else if(board_load == 2){
 			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err == 0){
+				perror("server has ended connection\n");
 				serverClosed(my_player);
 				free(message);
 				free(rgb);
+				exit(EXIT_FAILURE);
+			}
+			if(err == -1){
+				perror("receive ");
 				exit(EXIT_FAILURE);
 			}
 

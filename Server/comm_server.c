@@ -79,9 +79,9 @@ int send_board_setup(struct player *new_player){
 			if(err == -1) return -1;
 
 			if(new_player->times == 0)
-				err = send_init_msg(new_player->sock_fd, PACMAN, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
+				err = send_init_msg(currentPlayer->sock_fd, PACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
 			else
-				err = send_init_msg(new_player->sock_fd, SUPERPACMAN, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
+				err = send_init_msg(currentPlayer->sock_fd, SUPERPACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
 		} 
 		
 
