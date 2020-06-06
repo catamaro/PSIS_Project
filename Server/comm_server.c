@@ -24,6 +24,7 @@ void sigHandler(int sig){
 
 	destroy_insert_player_mutex();
 	destroy_run_rcv_event();
+	destroy_run_snd_event();
 
 	exit(EXIT_FAILURE);
 }

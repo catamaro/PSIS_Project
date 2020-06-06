@@ -241,8 +241,8 @@ void *threadAccept(void *arg)
 	
 	while (!done)
 	{
-		struct position *pacman = malloc(sizeof(struct position));
 		struct color *new_color = malloc(sizeof(struct color));
+		struct position *pacman = malloc(sizeof(struct position));
 		struct position *monster = malloc(sizeof(struct position));
 
 		printf("waiting for players\n");
@@ -275,8 +275,8 @@ void *threadAccept(void *arg)
 		board[pacman->x][pacman->y] = PACMAN;
 		board[monster->x][monster->y] = MONSTER;
 		// paint both characters in server board
-		paint_pacman((pacman)->x, (pacman)->y, (new_color)->r, (new_color)->g, (new_color)->b);
-		paint_monster((monster)->x, (monster)->y, (new_color)->r, (new_color)->g, (new_color)->b);
+		paint_pacman(pacman->x, pacman->y, new_color->r, new_color->g, new_color->b);
+		paint_monster(monster->x, monster->y, new_color->r, new_color->g, new_color->b);
 
 		num_players ++;
 
@@ -284,8 +284,6 @@ void *threadAccept(void *arg)
 
 		accept_client(board_x, board_y, pacman, monster, new_color, &num_players, 
 						new_fd);
-		//broadcast_update((pacman)->x, (pacman)->y, pacman->x, (pacman)->y, PACMAN, new_color);
-		//broadcast_update((monster)->x, (monster)->y, (monster)->x, (monster)->y, MONSTER, new_color);
 	}
 	
 

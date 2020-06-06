@@ -796,7 +796,7 @@ int** loadBoard(char *arg, int *x, int *y){
 		board[i] = board[i - 1] + board_y;
 
 	//creates a windows and a board
-	create_board_window(board_x, board_y);
+	create_board_window(board_y, board_x);
 
 	// Consume first line, that is correct due to previous fscanf
 	read = getline(&line, &len, fp);

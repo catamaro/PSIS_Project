@@ -18,7 +18,7 @@ SDL_Texture *lemon;
 SDL_Texture *brick;
 SDL_Texture *cherry;
 
-int create_board_window(int dim_y, int dim_x)
+int create_board_window(int dim_x, int dim_y)
 {
 	col_width = 25;
 	n_cols = dim_x;

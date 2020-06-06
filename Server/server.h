@@ -13,10 +13,10 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define LEFT 10
-#define RIGHT 11
-#define UP 12
-#define DOWN 13
+#define LEFT 12
+#define UP 10
+#define DOWN 11
+#define RIGHT 13
 
 #define EMPTY 0
 #define BRICK 1
