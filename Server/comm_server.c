@@ -43,8 +43,6 @@ int send_board_dim(int x, int y, int sock_fd){
 		exit(EXIT_FAILURE);
 	}
 
-	printf("\nsvr snd board size: %d %d\n", board_dim->x, board_dim->y);
-
     return 0;
 }
 
@@ -79,7 +77,13 @@ int send_board_setup(struct player *new_player){
 		if(new_player != currentPlayer){
 			err = send_init_msg(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, new_player->rgb);
 			if(err == -1) return -1;
+
+			if(new_player->times == 0)
+				err = send_init_msg(new_player->sock_fd, PACMAN, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
+			else
+				err = send_init_msg(new_player->sock_fd, SUPERPACMAN, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
 		} 
+		
 
 		err = send_init_msg(new_player->sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
 		if(err == -1) return -1;
@@ -118,8 +122,6 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		printf("\nsvr snd initial positions: %d %d %d %d %d\n", message->new_x, message->new_y,
-					message->r, message->g, message->b);
 	}
 	else{
 		struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
@@ -133,7 +135,6 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 			close(sock_fd);
 			exit(EXIT_FAILURE);
 		}
-		printf("\nsvr snd initial positions: %d %d\n", message->new_x, message->new_y);
 	}
 
 
@@ -149,8 +150,6 @@ int rcv_color(int sock_fd, color *new_color){
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
-
-	printf("\nsvr rcv color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
 
 	return 0;
 }
@@ -183,8 +182,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	if(message->character == PACMAN){
 		*type = PACMAN;
 
-		printf("svr rcv event: %d %d %d\n", message->character, message->new_x, message->new_y);
-
 		// store new position in motion
 		new_position->x = message->new_x;
 		new_position->y = message->new_y;
@@ -194,8 +191,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	}
 	else if(message->character == MONSTER){
 		*type = MONSTER;
-
-		printf("svr rcv event: %d %d\n", message->character, message->new_x);
 
 		new_x = list->monster->x;
 		new_y = list->monster->y;
@@ -263,8 +258,6 @@ int send_update(int sock_fd, int type, int x, int y, int new_x, int new_y, struc
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
-	printf("\nsvr snd update position: %d %d %d %d %d\n", message->new_x, message->new_y,
-					message->r, message->g, message->b);
 
 
 	return 0;

@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(5800);
+	local_addr.sin_port = htons(58000);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
