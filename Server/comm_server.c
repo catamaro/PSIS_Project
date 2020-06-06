@@ -2,6 +2,7 @@
 #include "server.h"
 #include "comm.h"
 #include "list_handler.h"
+#include "game_rules.h"
 
 pthread_mutex_t run_insert_player = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t run_rcv_event = PTHREAD_MUTEX_INITIALIZER;
@@ -129,30 +130,6 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 
 
 	return 0;
-}
-
-int send_position(struct position *pacman, struct position *monster, int sock_fd){
-	char message[50];
-    int err;
-
-	memset(message, 0, 50*sizeof(char));
-
-    err = sprintf(message, "%d %d %d %d\n", pacman->x, pacman->y, monster->x, monster->y);
-	if(err == -1){
-		printf("error: cannot create message\n");
-		return -1;
-	}
-
-   	err = write(sock_fd, message, strlen(message));
-	if(err <= 0){
-		perror("write: ");
-		close(sock_fd);
-		exit(EXIT_FAILURE);
-	}
-
-	printf("\nsvr snd initial positions: %s\n", message);
-
-    return 0;
 }
 
 int rcv_color(int sock_fd, color *new_color){
@@ -341,18 +318,9 @@ void accept_client(int board_x, int board_y, struct position *pacman, struct pos
 	printf("\nPlayer %d entered the game\n", *num_players);
 
     //pthread_cond_signal(&run_cond);
-	//printf("I FREE MY SLAVES!\n");
 	pthread_mutex_unlock(&run_insert_player);
 	run_thread = 1;
 
-}
-
-void init_insert_player_mutex(){
-	pthread_mutex_init(&run_insert_player, NULL);
-}
-
-void destroy_insert_player_mutex(){
-	pthread_mutex_destroy(&run_insert_player);
 }
 
 int** CheckInactivity(int **board, struct player *my_player)
@@ -421,50 +389,12 @@ int** CheckInactivity(int **board, struct player *my_player)
 	return board;
 }
 
-void ManageFruits(int *num_fruits, int *num_players, int ***board)
-{
-
-	if (*num_players <= 1 && *num_fruits == 0)
-		return;
-	if (*num_fruits == (*num_players - 1) * 2)
-		return;
-	if (*num_fruits > (*num_players - 1) * 2)
-	{
-		do
-		{
-			int x, y;
-			FetchFruitHeadCoords(&x, &y);
-			RemoveFruitHead();
-
-			clear_place(x, y);
-			(*board)[x][y] = 0;
-			(*num_fruits)--;
-			broadcast_update(x, y, x, y, (*board)[x][y], NULL);
-
-		} while (*num_fruits > (*num_players - 1) * 2);
-
-		return;
-	}
-	do
-	{
-		int x, y;
-		RandomPositionRules(&x, &y);
-
-		int fruit = rand() % (CHERRY + 1 - LEMON) + LEMON;
-		AddPosHead(x, y, fruit);
-
-		(*num_fruits)++;
-		if (fruit == LEMON)
-		{
-			(*board)[x][y] = LEMON;
-			paint_lemon(x, y);
-		}
-		else if (fruit == CHERRY)
-		{
-			(*board)[x][y] = CHERRY;
-			paint_cherry(x, y);
-		}
-		broadcast_update(x, y, x, y, (*board)[x][y], NULL);
-
-	} while (*num_fruits < (*num_players - 1) * 2);
+void init_insert_player_mutex(){
+	pthread_mutex_init(&run_insert_player, NULL);
 }
+
+void destroy_insert_player_mutex(){
+	pthread_mutex_destroy(&run_insert_player);
+}
+
+
