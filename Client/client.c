@@ -77,7 +77,7 @@ int main(int argc, char* argv[]){
 	err = rcv_board_dim(my_player->sock_fd, &board_x, &board_y);
 	if (err == -1) exit(EXIT_FAILURE);
 	 
-	create_board_window(board_y, board_x);
+	create_board_window(board_x, board_y);
 
 	//receives messages from server
 	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
