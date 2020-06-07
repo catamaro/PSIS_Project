@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	SDL_Event event;
 	struct sockaddr_in local_addr;
-	int port = 58000;
+	int port = 58001;
 
 	if (argc != 2)
 	{

@@ -76,14 +76,19 @@ int send_board_setup(struct player *new_player){
 	for (currentPlayer = headPlayer; currentPlayer != NULL; currentPlayer = currentPlayer->next)
 	{
 		if(new_player != currentPlayer){
-			err = send_init_msg(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, new_player->rgb);
+			err = send_update(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, 
+							new_player->monster->x, new_player->monster->y, new_player->rgb);
+
 			if(err == -1) return -1;
 
 			if(new_player->times == 0)
-				err = send_init_msg(currentPlayer->sock_fd, PACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
+				err = send_update(currentPlayer->sock_fd, PACMAN, new_player->pacman->x, new_player->pacman->y, 
+									new_player->pacman->x, new_player->pacman->y, new_player->rgb);
 			else
-				err = send_init_msg(currentPlayer->sock_fd, SUPERPACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
-		} 
+				err = send_update(currentPlayer->sock_fd, SUPERPACMAN, new_player->pacman->x, new_player->pacman->y, 
+									new_player->pacman->x, new_player->pacman->y, new_player->rgb);
+			if(err == -1) return -1;
+		}
 		
 
 		err = send_init_msg(new_player->sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
