@@ -150,6 +150,10 @@ int rcv_color(int sock_fd, color *new_color){
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
+	if(err != sizeof(*new_color)){
+		printf("error: incorrect message from client\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -166,6 +170,10 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
 		perror("receive ");
+		return -1;
+	}
+	if(err != sizeof(*message)){
+		printf("error: incorrect message from client\n");
 		return -1;
 	}
 

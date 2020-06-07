@@ -162,8 +162,9 @@ void * threadReceive(void *arg){
 		// receive board info type 1 fruits and bricks 
 		if(board_load == 0){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err <= 0 || err != sizeof(*message1)){
+				if (err <= 0)printf("Server has ended connection\n");
+				else printf("error: incorrect message from server\n");
 				serverClosed(my_player);
 				free(message1);
 				free(message2);
@@ -185,8 +186,9 @@ void * threadReceive(void *arg){
 		// receive board info type 1 pacman and monster
 		else if(board_load == 1){
 			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err <= 0 || err != sizeof(*message2)){
+				if (err <= 0)printf("Server has ended connection\n");
+				else printf("error: incorrect message from server\n");
 				serverClosed(my_player);
 				free(message2);
 				free(message);
