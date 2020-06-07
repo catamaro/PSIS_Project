@@ -17,6 +17,7 @@ int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
 		exit(EXIT_FAILURE);
 	}
 
+
 	*board_x = board_dim->y;
 	*board_y = board_dim->x;
 

@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	SDL_Event event;
 	struct sockaddr_in local_addr;
+	int port = 58001;
 
 	if (argc != 2)
 	{
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_addr.s_addr = INADDR_ANY;
-	local_addr.sin_port = htons(58001);
+	local_addr.sin_port = htons(port);
 	int err = bind(server_fd, (struct sockaddr *)&local_addr,
 				   sizeof(local_addr));
 	if (err == -1)
@@ -53,7 +54,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Socket created and binded \n");
 	if (listen(server_fd, MAX_PLAYERS_WAITING) == -1)
 	{
 		perror("listen: ");
@@ -69,6 +69,8 @@ int main(int argc, char *argv[])
 		printf("error: could not create thread\n");
 		exit(EXIT_FAILURE);
 	}
+
+	printf("Use port %d to access server\n", port);
 
 	// initialization of the mutex
 	init_insert_player_mutex();

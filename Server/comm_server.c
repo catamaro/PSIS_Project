@@ -37,6 +37,7 @@ int send_board_dim(int x, int y, int sock_fd){
 	board_dim->y = y;
 
    	err = write(sock_fd, board_dim, sizeof(*board_dim)); 
+
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
@@ -75,14 +76,19 @@ int send_board_setup(struct player *new_player){
 	for (currentPlayer = headPlayer; currentPlayer != NULL; currentPlayer = currentPlayer->next)
 	{
 		if(new_player != currentPlayer){
-			err = send_init_msg(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, new_player->rgb);
+			err = send_update(currentPlayer->sock_fd, MONSTER, new_player->monster->x, new_player->monster->y, 
+							new_player->monster->x, new_player->monster->y, new_player->rgb);
+
 			if(err == -1) return -1;
 
 			if(new_player->times == 0)
-				err = send_init_msg(currentPlayer->sock_fd, PACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
+				err = send_update(currentPlayer->sock_fd, PACMAN, new_player->pacman->x, new_player->pacman->y, 
+									new_player->pacman->x, new_player->pacman->y, new_player->rgb);
 			else
-				err = send_init_msg(currentPlayer->sock_fd, SUPERPACMAN, new_player->monster->x, new_player->monster->y, new_player->rgb);
-		} 
+				err = send_update(currentPlayer->sock_fd, SUPERPACMAN, new_player->pacman->x, new_player->pacman->y, 
+									new_player->pacman->x, new_player->pacman->y, new_player->rgb);
+			if(err == -1) return -1;
+		}
 		
 
 		err = send_init_msg(new_player->sock_fd, MONSTER, currentPlayer->monster->x, currentPlayer->monster->y, currentPlayer->rgb);
@@ -124,6 +130,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		}
 	}
 	else{
+
 		struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 		message->character = type;
 		message->new_x = x;
@@ -169,7 +176,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 
 	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
-		perror("receive ");
 		return -1;
 	}
 	if(err != sizeof(*message)){
