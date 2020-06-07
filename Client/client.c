@@ -57,6 +57,7 @@ int main(int argc, char* argv[]){
 		}
 	}
 
+
 	/****** BEGIN OF SETUP ******/
 
 	// setup of server - creation of client socket
@@ -112,7 +113,8 @@ int main(int argc, char* argv[]){
 				get_board_place(event.motion.y, event.motion.x, &y, &x);
 
 				if(x == last_x && y == last_y) continue;
-				if( (abs(x - my_player->pacman->x) + abs(y - my_player->pacman->y) ) == 1){
+				if( ( abs(y - my_player->pacman->y) + abs(x - my_player->pacman->x) ) == 1){
+
 					err = send_event(PACMAN,  x,  y,  -1, my_player);
 					if(err == -1) exit(EXIT_FAILURE);
 					last_x = x; 
@@ -162,9 +164,8 @@ void * threadReceive(void *arg){
 		// receive board info type 1 fruits and bricks 
 		if(board_load == 0){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
-			if(err <= 0 || err != sizeof(*message1)){
-				if (err <= 0)printf("Server has ended connection\n");
-				else printf("error: incorrect message from server\n");
+			if(err <= 0){
+				printf("Server has ended connection\n");
 				serverClosed(my_player);
 				free(message1);
 				free(message2);
@@ -186,9 +187,8 @@ void * threadReceive(void *arg){
 		// receive board info type 1 pacman and monster
 		else if(board_load == 1){
 			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
-			if(err <= 0 || err != sizeof(*message2)){
-				if (err <= 0)printf("Server has ended connection\n");
-				else printf("error: incorrect message from server\n");
+			if(err <= 0){
+				printf("Server has ended connection\n");
 				serverClosed(my_player);
 				free(message2);
 				free(message);

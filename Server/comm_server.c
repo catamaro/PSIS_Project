@@ -37,6 +37,7 @@ int send_board_dim(int x, int y, int sock_fd){
 	board_dim->y = y;
 
    	err = write(sock_fd, board_dim, sizeof(*board_dim)); 
+
 	if(err <= 0){
 		perror("write: ");
 		close(sock_fd);
@@ -124,6 +125,7 @@ int send_init_msg(int sock_fd, int type, int x, int y, struct color *rgb){
 		}
 	}
 	else{
+
 		struct init_msg_1 *message = malloc(sizeof(struct init_msg_1));
 		message->character = type;
 		message->new_x = x;
@@ -169,7 +171,6 @@ int rcv_event(int sock_fd, SDL_Event *new_event, int *type){
 
 	err = recv(sock_fd, message , sizeof(*message), 0);
 	if(err <= 0){
-		perror("receive ");
 		return -1;
 	}
 	if(err != sizeof(*message)){
