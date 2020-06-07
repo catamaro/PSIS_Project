@@ -419,7 +419,6 @@ void clientDisconnect(int id, int *num_players, int ***board)
 	pthread_mutex_lock(&run_snd_event);
 	pthread_mutex_lock(&run_insert_player);
 
-
 	printf("Player: %d has disconnected\n", remove_player->id);
 
 	x1 = remove_player->monster->x;
@@ -433,7 +432,6 @@ void clientDisconnect(int id, int *num_players, int ***board)
 
 	(*board)[x2][y2] = EMPTY;
 	clear_place(x2, y2);
-
 
 	deletePlayer(remove_player->id);
 

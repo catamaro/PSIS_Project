@@ -257,7 +257,7 @@ void *threadAccept(void *arg)
 			exit(EXIT_FAILURE);
 		}
 
-		if (num_players > MAX_PLAYERS)
+		if (num_players + 1 > MAX_PLAYERS)
 		{
 			printf("maximum number of players achieved\n");
 			close(new_fd);
