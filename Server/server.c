@@ -273,7 +273,7 @@ void *threadAccept(void *arg)
 		}
 
 		// get random position on the board
-		RandomPositionConnect(&(pacman->x), &(pacman->y), &(monster->x), &(monster->y));
+		RandomPositionConnect(&(pacman->x), &(monster->x), &(pacman->y), &(monster->y));
 		// update board with position
 		board[pacman->x][pacman->y] = PACMAN;
 		board[monster->x][monster->y] = MONSTER;
