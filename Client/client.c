@@ -161,7 +161,6 @@ void * threadReceive(void *arg){
 	int new_x = 0, new_y = 0, character = 0;
 
 	while(!done){
-		sleep(1);
 		// receive board info type 1 fruits and bricks 
 		if(board_load == 0){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
