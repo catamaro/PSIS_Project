@@ -12,13 +12,13 @@ int rcv_board_dim(int sock_fd, int *board_x, int *board_y){
 		close(sock_fd);
 		exit(EXIT_FAILURE);
 	}
-
-    printf("clt rcv board size: %d %d\n", board_dim->x, board_dim->y);
+	if(err != sizeof(*board_dim)){
+		printf("error: incorrect message from server\n");
+		exit(EXIT_FAILURE);
+	}
 
 	*board_x = board_dim->y;
 	*board_y = board_dim->x;
-
-	//free(board_dim);
 
 	return 0;
 
@@ -34,7 +34,6 @@ int send_color(int sock_fd, struct color *new_color){
 		close(sock_fd);
 		return -1;
 	}
-	printf("clt snd color: %d %d %d\n", new_color->r, new_color->g, new_color->b);
 
 	return 0;
 }

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
 	my_player->rgb = malloc(sizeof(struct color));
 
 	if(argc != 6){
-		printf("error: invalid parameters [IP] [Port] [r] [g] [b]");
+		printf("error: invalid parameters [IP] [Port] [r] [g] [b]\n");
 		exit(EXIT_FAILURE);
 	}
 	else{
@@ -35,19 +35,34 @@ int main(int argc, char* argv[]){
 			printf("error: argv[3] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
+		if(my_player->rgb->r > 250 || my_player->rgb->r < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
+			exit(EXIT_FAILURE);
+		}
 		if(sscanf(argv[4], "%d", &(my_player->rgb->g)) != 1){
 			printf("error: argv[4] is not a number\n");
+			exit(EXIT_FAILURE);
+		}
+		if(my_player->rgb->g > 250 || my_player->rgb->g < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
 			exit(EXIT_FAILURE);
 		}
 		if(sscanf(argv[5], "%d", &(my_player->rgb->b)) != 1){
 			printf("error: argv[5] is not a number\n");
 			exit(EXIT_FAILURE);
 		}
+		if(my_player->rgb->b > 250 || my_player->rgb->b < 0){
+			printf("error: invalid RGB color please use value from 0 to 250\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 
+	/****** BEGIN OF SETUP ******/
+
+	// setup of server - creation of client socket
 	my_player->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(my_player->sock_fd == -1){
-		perror("socket: ");
+		perror("socket ");
 		exit(EXIT_FAILURE);
 	}
 		
@@ -55,22 +70,21 @@ int main(int argc, char* argv[]){
 	server_addr.sin_port = htons(port);
 	int err = inet_aton(IP, &server_addr.sin_addr);
 	if(err == 0){
-		perror("aton: ");
+		perror("aton ");
 		exit(EXIT_FAILURE);
 	}
-
+	// setup of server - creation of server connection to server
 	err = connect(my_player->sock_fd, (const struct sockaddr *)&server_addr,
 						sizeof(server_addr));
 
 	if(err == -1){
-		perror("bind: ");
+		perror("conection ");
 		exit(EXIT_FAILURE);
 	}
 	printf("just connected to the server \n\n");
+
 	
-	//receive and send thread id
-	pthread_t receive_id;
-	
+	// client initial messages
 	err = send_color(my_player->sock_fd, my_player->rgb);
 	if(err == -1) exit(EXIT_FAILURE);
 
@@ -80,8 +94,12 @@ int main(int argc, char* argv[]){
 	create_board_window(board_x, board_y);
 
 	//receives messages from server
-	pthread_create(&receive_id, NULL, threadReceive, (void *)my_player);
-	
+	pthread_create(&(my_player->thread_id), NULL, threadReceive, (void *)my_player);
+
+	/****** END OF SETUP ******/
+
+
+	// main thread send messages to server 
 	int x = 0, y = 0;
 	while(!done){
 		while (SDL_PollEvent(&event)) {
@@ -130,6 +148,7 @@ int main(int argc, char* argv[]){
 	return EXIT_SUCCESS;
 }
 
+// thread that receives messages from server
 void * threadReceive(void *arg){
 	int err;
 	struct player *my_player = (player*) arg;
@@ -143,8 +162,9 @@ void * threadReceive(void *arg){
 		// receive board info type 1 fruits and bricks 
 		if(board_load == 0){
 			err = recv(my_player->sock_fd, message1 , sizeof(*message1), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err <= 0 || err != sizeof(*message1)){
+				if (err <= 0)printf("Server has ended connection\n");
+				else printf("error: incorrect message from server\n");
 				serverClosed(my_player);
 				free(message1);
 				free(message2);
@@ -152,7 +172,6 @@ void * threadReceive(void *arg){
 				free(rgb);
 				exit(EXIT_FAILURE);
 			}
-			printf("clt rcv init_msg %d byte %d %d %d\n", err, message1->character,message1->new_x,message1->new_y);
 
 			if(message1->character == -1){
 				board_load++;
@@ -167,8 +186,9 @@ void * threadReceive(void *arg){
 		// receive board info type 1 pacman and monster
 		else if(board_load == 1){
 			err = recv(my_player->sock_fd, message2 , sizeof(*message2), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err <= 0 || err != sizeof(*message2)){
+				if (err <= 0)printf("Server has ended connection\n");
+				else printf("error: incorrect message from server\n");
 				serverClosed(my_player);
 				free(message2);
 				free(message);
@@ -182,9 +202,6 @@ void * threadReceive(void *arg){
 				free(message2);
 				continue;
 			}
-			printf("clt rcv init_msg %d byte %d %d %d color: %d %d %d\n", err, message2->character,message2->new_x,message2->new_y, message2->r,  
-					message2->g,  message2->b);
-
 
 			character = message2->character;
 			new_x = message2->new_x;
@@ -196,23 +213,22 @@ void * threadReceive(void *arg){
 		// receive board position update
 		else if(board_load == 2){
 			err = recv(my_player->sock_fd, message, sizeof(*message), 0);
-			if(err <= 0){
-				perror("receive ");
+			if(err == 0){
+				printf("server has ended connection\n");
 				serverClosed(my_player);
 				free(message);
 				free(rgb);
 				exit(EXIT_FAILURE);
 			}
+			if(err == -1){
+				perror("receive ");
+				exit(EXIT_FAILURE);
+			}
 
 			if(message->character == SCORE){
 				printf("Player %d: %d points\n",message->new_x,message->new_y);
-				printf("clt rcv score %d byte %d %d\n", err, new_x,new_y);
 				continue;
 			} 
-
-			printf("clt rcv update_msg %d byte %d %d %d color: %d %d %d\n", err, message->character,message->new_x,message->new_y, message->r,  
-					message->g,  message->b);
-
 
 			if(message->x != -1)
 				clear_place(message->x, message->y);
@@ -225,7 +241,7 @@ void * threadReceive(void *arg){
 			rgb->g = message->g;
 			rgb->b = message->b;
 		}
-			
+		
 		switch (character)
 		{
 			case MONSTER:  
